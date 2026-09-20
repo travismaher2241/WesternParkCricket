@@ -173,78 +173,74 @@
     if(s.practice){line(g.cx-g.spread*.7,g.near-8,g.cx+g.spread*.7,g.near-8,'#ffd25c',3);text('HIT HERE',g.cx+g.spread*.94,g.near-5,10,'#173b38','left');}
   }
   function stumps(x,y,h,broken){for(let i=-1;i<=1;i++)line(x+i*h*.15,y,x+i*h*.15+(broken?i*h*.7:0),y-h,'#f8ecce',Math.max(2,h*.075));if(!broken)line(x-h*.21,y-h,x+h*.21,y-h,'#fff5d7',Math.max(2,h*.06));else{line(x-h*.8,y-h*1.2,x-h*.4,y-h*1.3,'#fff5d7',3);}}
-  // A dedicated right-handed batting rig, viewed from behind the striker.
-  // Front shoulder/foot lead up the pitch; the helmet looks towards the bowler.
-  // Pads are seen edge-on and the hands stay together throughout the stroke.
-  // Both legs hang from one hip line and share bone lengths, so neither reads
-  // as longer than the other; the front foot only sits a little higher because
-  // it is a stride further up the pitch.
+  // A right-handed striker drawn in true profile, as the camera behind the
+  // stumps sees him: side-on to the bowler, so his chest and both gloves face
+  // the off side (screen right) and no name-and-number back faces the camera.
+  // The body is one narrow silhouette; feet are separated up the pitch rather
+  // than across the screen, and both legs share a hip line and bone lengths.
   function batter(x,y,h) {
     ctx.save();ctx.translate(x,y);ctx.scale(h/100,h/100);
     const t=s.swing?clamp(s.swing/.38,0,1):0;
     const step=Math.sin(t*Math.PI)*7;
-    const hipY=-46,shoulderY=-73;
-    ellipse(0,1,23,5,'#28533340');
-    // A pad is a narrow strip down the outside of the shin, not a slab facing
-    // the camera, so it is built straight from the knee and ankle joints.
+    const hipY=-48;
+    ellipse(2,1,19,5,'#28533340');
+    // A pad is a narrow strip down the outside of the shin, built from the
+    // knee and ankle so it follows the leg through the stride.
     const pad=(k,a,fill)=>{
       poly([[k.x-3.5,k.y-1],[k.x+3.5,k.y-2],[a.x+3.5,a.y-1],[a.x-3.5,a.y]],fill,'#bdc0af',1);
-      [.32,.66].forEach(u=>line(mix(k.x,a.x,u)-3,mix(k.y,a.y,u)-1,mix(k.x,a.x,u)+3.5,mix(k.y,a.y,u)-2,'#c2beaa',1.4));
+      [.34,.68].forEach(u=>line(mix(k.x,a.x,u)-3,mix(k.y,a.y,u)-1,mix(k.x,a.x,u)+3.5,mix(k.y,a.y,u)-2,'#c2beaa',1.4));
     };
-    // Far (front) leg: bent knee, foot pointing across the crease.
-    const fh={x:5,y:hipY},fk={x:11+step*.5,y:-26-step*.5},fa={x:14+step,y:-5-step};
-    line(fh.x,fh.y,fk.x,fk.y,'#e4e8dc',12);
-    line(fk.x,fk.y,fa.x,fa.y,'#e4e8dc',11);
-    line(fa.x-3,fa.y+2,fa.x+9,fa.y+1,'#17394d',7);
-    pad(fk,fa,'#f8efd5');
-    // Near (back) leg stays grounded, behind the popping crease.
-    const bh={x:-7,y:hipY},bk={x:-11,y:-24},ba={x:-8,y:0};
-    line(bh.x,bh.y,bk.x,bk.y,'#eef0e3',13);
+    // Front leg: a stride up the pitch, so it sits a little higher and reads
+    // slightly slimmer with distance. Both boots point to the off side.
+    const fk={x:8+step*.5,y:-28-step*.5},fa={x:10+step,y:-7-step};
+    line(3,hipY,fk.x,fk.y,'#d9dfd0',11);
+    line(fk.x,fk.y,fa.x,fa.y,'#d9dfd0',10);
+    line(fa.x-3,fa.y+2,fa.x+9,fa.y+1,'#17394d',6.5);
+    pad(fk,fa,'#e9dfc2');
+    // Back leg is the nearer one: same bones, planted behind the crease.
+    const bk={x:-5,y:-25},ba={x:-1,y:1};
+    line(-2,hipY,bk.x,bk.y,'#eef0e3',13);
     line(bk.x,bk.y,ba.x,ba.y,'#eef0e3',12);
-    line(ba.x-3,ba.y+3,ba.x+10,ba.y+2,'#17394d',7);
-    pad(bk,ba,'#eee4c7');
-    // Side-on torso: a straight back edge from shoulder to hip, a sloping
-    // shoulder line, and no bulges behind the spine.
-    poly([[-12,-70],[-1,-78],[12,-71],[10,-45],[-11,-43]],'#246bb4','#173b64',1.5);
-    if(s.swing && s.side<0){
-      // Open the chest into a leg-side stroke; the hands cross the front,
-      // never the name/number on the back of an unrotated torso.
-      poly([[-1,-78],[12,-71],[10,-45],[3,-44],[2,-75]],'#19528e');
-      line(-11,-66,9,-68,'#a5d0ef',3);
-    }else{
-      poly([[-12,-70],[2,-75],[3,-43],[-11,-43]],'#19528e');
-      line(-12,-67,0,-71,'#a5d0ef',3);
-      ctx.save();ctx.translate(-5,-59);ctx.rotate(-.14);text('LIAM',0,0,5,'#f1f7ff');text('7',0,11,9,'#f1f7ff');ctx.restore();
-    }
-    // Only the nape is visible. No camera-facing face or frontal grille.
-    line(-1,-78,1,-85,'#d7a57c',8);
-    ellipse(0,-92,13,13,'#164b83');
-    ellipse(-3,-94,9,10,'#215c99');
-    // Peak and small far-side grille point up the pitch (towards the bowler).
-    poly([[3,-104],[17,-106],[19,-102],[10,-99]],'#103b67');
-    line(13,-100,17,-94,'#acbcc5',1.6);line(17,-94,13,-88,'#acbcc5',1.6);
-    line(-9,-87,5,-84,'#103657',3);
-    line(-8,-97,-4,-98,'#0f3860',2);line(-7,-93,-3,-94,'#0f3860',2);
+    line(ba.x-4,ba.y+3,ba.x+10,ba.y+2,'#17394d',7);
+    pad(bk,ba,'#f8efd5');
+    // Profile torso: a narrow slab leaning over the front foot, with the near
+    // shoulder rolled forward. The rear edge is shaded, not lettered.
+    poly([[-6,-70],[1,-79],[10,-72],[11,-50],[-3,-47]],'#246bb4','#173b64',1.5);
+    poly([[-6,-70],[0,-73],[2,-48],[-3,-47]],'#19528e');
+    line(-2,-72,7,-75,'#a5d0ef',2.5);
+    ctx.save();ctx.translate(1,-64);ctx.rotate(.07);text('7',0,0,7,'#c9e2f7');ctx.restore();
+    // Head in profile: the helmet looks up the pitch. The shell is turned to
+    // the camera, and the jaw, peak and grille sit on the leading edge, so
+    // the face is read from the side rather than through a frontal grille.
+    line(0,-78,3,-85,'#d7a57c',7.5);
+    ellipse(0,-94,12,12,'#164b83');
+    ellipse(-3,-97,7.5,8.5,'#215c99');
+    ellipse(9,-90,5.5,6,'#d7a57c');
+    // The peak tapers off the brow and the grille cages the jaw in two bars.
+    poly([[4,-99],[19,-97],[19,-94],[6,-93]],'#103b67');
+    line(14,-95,15,-89,'#b9c7cf',2);line(15,-89,9,-84,'#b9c7cf',2);
+    line(11,-92,6,-91,'#b9c7cf',1.6);
+    line(9,-84,1,-83,'#103657',2.5);
     // Backlift before the ball arrives, then downswing and follow-through.
     const lift=s.phase==='delivery'&&!s.swing?clamp(s.time/s.flight,.0,1):0;
-    let grip={x:31,y:-55},toe={x:39+lift*8,y:-9-lift*73};
+    let grip={x:24,y:-54},toe={x:31+lift*7,y:-8-lift*70};
     if(s.swing){
       const contactX=(s.line*geometry().spread*.38+17*geometry().scale)/(h/100);
-      if(t<.32){const u=t/.32;grip={x:mix(31,contactX*.46,u),y:mix(-55,-39,u)};toe={x:mix(47,contactX,u),y:mix(-78,-10,u)};}
-      else {const u=(t-.32)/.68;grip={x:mix(contactX*.46,s.side*25,u),y:mix(-39,-73,u)};toe={x:mix(contactX,s.side*48,u),y:mix(-10,-114,u)};}
+      if(t<.32){const u=t/.32;grip={x:mix(24,contactX*.46,u),y:mix(-54,-40,u)};toe={x:mix(40,contactX,u),y:mix(-76,-10,u)};}
+      else {const u=(t-.32)/.68;grip={x:mix(contactX*.46,s.side*24,u),y:mix(-40,-72,u)};toe={x:mix(contactX,s.side*46,u),y:mix(-10,-112,u)};}
     }
-    // Both elbows lead from the chest-facing edge. Never draw a forearm
-    // across the shirt's back: that reads as hands clasped behind the waist.
-    const elbowX=mix(23,grip.x*.55+12,t);
-    line(7,shoulderY,elbowX,-66,'#2369ac',9);
-    line(elbowX,-66,grip.x+1,grip.y-3,'#d9aa82',6);
-    line(10,-66,elbowX-2,-52,'#2e7bc6',10);
-    line(elbowX-2,-52,grip.x-2,grip.y+3,'#d9aa82',7);
+    // Side-on means both arms hang on the off side of the body and the hands
+    // stay together: the far arm is drawn first and a shade darker.
+    const elbowX=mix(17,grip.x*.55+9,t);
+    line(3,-73,elbowX,-65,'#1f5f9f',8.5);
+    line(elbowX,-65,grip.x+1,grip.y-3,'#cb9e78',5.5);
+    line(7,-69,elbowX+1,-53,'#2e7bc6',9.5);
+    line(elbowX+1,-53,grip.x-1,grip.y+3,'#d9aa82',6.5);
     const dx=toe.x-grip.x,dy=toe.y-grip.y;
     line(grip.x,grip.y,grip.x+dx*.32,grip.y+dy*.32,'#293f50',4);
-    line(grip.x+dx*.32,grip.y+dy*.32,toe.x,toe.y,'#e8c789',10);
+    line(grip.x+dx*.32,grip.y+dy*.32,toe.x,toe.y,'#e8c789',9);
     line(grip.x+dx*.4-2,grip.y+dy*.4,toe.x-2,toe.y,'#fff0be',2);
-    ellipse(grip.x-2,grip.y+3,5,4,'#fff5dc');ellipse(grip.x+1,grip.y-3,5,4,'#fff5dc');
+    ellipse(grip.x-1,grip.y+3,4.5,4,'#fff5dc');ellipse(grip.x+1,grip.y-3,4.5,4,'#fff5dc');
     ctx.restore();
   }
   function person(x,y,h,role,pose=0) {
