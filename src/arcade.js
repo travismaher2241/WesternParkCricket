@@ -173,11 +173,12 @@
     if(s.practice){line(g.cx-g.spread*.7,g.near-8,g.cx+g.spread*.7,g.near-8,'#ffd25c',3);text('HIT HERE',g.cx+g.spread*.94,g.near-5,10,'#173b38','left');}
   }
   function stumps(x,y,h,broken){for(let i=-1;i<=1;i++)line(x+i*h*.15,y,x+i*h*.15+(broken?i*h*.7:0),y-h,'#f8ecce',Math.max(2,h*.075));if(!broken)line(x-h*.21,y-h,x+h*.21,y-h,'#fff5d7',Math.max(2,h*.06));else{line(x-h*.8,y-h*1.2,x-h*.4,y-h*1.3,'#fff5d7',3);}}
-  // A right-handed striker drawn in true profile, as the camera behind the
-  // stumps sees him: side-on to the bowler, so his chest and both gloves face
-  // the off side (screen right) and no name-and-number back faces the camera.
-  // The body is one narrow silhouette; feet are separated up the pitch rather
-  // than across the screen, and both legs share a hip line and bone lengths.
+  // A right-handed striker seen from behind the stumps: the body stays
+  // side-on and narrow, but the head is turned up the pitch to watch the
+  // bowler, so the camera gets the back of the helmet and only a sliver of
+  // cheek -- never a face looking out of the screen or off to the side.
+  // Feet are separated up the pitch rather than across the screen, and both
+  // legs share a hip line and bone lengths.
   function batter(x,y,h) {
     ctx.save();ctx.translate(x,y);ctx.scale(h/100,h/100);
     const t=s.swing?clamp(s.swing/.38,0,1):0;
@@ -209,33 +210,40 @@
     poly([[-6,-70],[0,-73],[2,-48],[-3,-47]],'#19528e');
     line(-2,-72,7,-75,'#a5d0ef',2.5);
     ctx.save();ctx.translate(1,-64);ctx.rotate(.07);text('7',0,0,7,'#c9e2f7');ctx.restore();
-    // Head in profile: the helmet looks up the pitch. The shell is turned to
-    // the camera, and the jaw, peak and grille sit on the leading edge, so
-    // the face is read from the side rather than through a frontal grille.
-    line(0,-78,3,-85,'#d7a57c',7.5);
-    ellipse(0,-94,12,12,'#164b83');
-    ellipse(-3,-97,7.5,8.5,'#215c99');
-    ellipse(9,-90,5.5,6,'#d7a57c');
-    // The peak tapers off the brow and the grille cages the jaw in two bars.
-    poly([[4,-99],[19,-97],[19,-94],[6,-93]],'#103b67');
-    line(14,-95,15,-89,'#b9c7cf',2);line(15,-89,9,-84,'#b9c7cf',2);
-    line(11,-92,6,-91,'#b9c7cf',1.6);
-    line(9,-84,1,-83,'#103657',2.5);
-    // Backlift before the ball arrives, then downswing and follow-through.
+    // The head looks up the pitch at the bowler, so the camera sees the back
+    // of the helmet: nape, shell and a cheek turned just past the shell edge.
+    // The peak and grille are on the far side and read as slivers at most.
+    line(0,-78,1,-85,'#d7a57c',7.5);
+    ellipse(1,-94,12,12,'#164b83');
+    ellipse(-2,-97,7.5,8.5,'#215c99');
+    // Turning to watch the bowler carries the cheek just past the shell edge.
+    ellipse(11.5,-91,3.5,4.5,'#d7a57c');
+    poly([[8,-100],[16,-98],[15,-94],[9,-94]],'#103b67');
+    line(11,-87,5,-85,'#103657',2.5);
+    line(-6,-97,-2,-98,'#0f3860',2);line(-5,-92,-1,-93,'#0f3860',2);
+    // The bat is a rigid length swung about the hands, so it never stretches
+    // or collapses mid-stroke: the hands travel and the blade rotates.
+    // Angles run clockwise from the off side, so +1.4 is grounded by the pad
+    // and -1.0 is the raised backlift.
     const lift=s.phase==='delivery'&&!s.swing?clamp(s.time/s.flight,.0,1):0;
-    let grip={x:24,y:-54},toe={x:31+lift*7,y:-8-lift*70};
+    const blade=46;
+    let grip={x:15,y:-53},angle=mix(1.42,-1.0,lift);
     if(s.swing){
       const contactX=(s.line*geometry().spread*.38+17*geometry().scale)/(h/100);
-      if(t<.32){const u=t/.32;grip={x:mix(24,contactX*.46,u),y:mix(-54,-40,u)};toe={x:mix(40,contactX,u),y:mix(-76,-10,u)};}
-      else {const u=(t-.32)/.68;grip={x:mix(contactX*.46,s.side*24,u),y:mix(-40,-72,u)};toe={x:mix(contactX,s.side*46,u),y:mix(-10,-112,u)};}
+      if(t<.32){const u=t/.32;grip={x:mix(15,contactX*.42,u),y:mix(-53,-46,u)};angle=mix(-1.0,.72,u);}
+      else {const u=(t-.32)/.68;grip={x:mix(contactX*.42,s.side*20,u),y:mix(-46,-70,u)};angle=mix(.72,s.side>0?-1.3:-2.25,u);}
     }
+    const toe={x:grip.x+Math.cos(angle)*blade,y:grip.y+Math.sin(angle)*blade};
     // Side-on means both arms hang on the off side of the body and the hands
     // stay together: the far arm is drawn first and a shade darker.
-    const elbowX=mix(17,grip.x*.55+9,t);
-    line(3,-73,elbowX,-65,'#1f5f9f',8.5);
-    line(elbowX,-65,grip.x+1,grip.y-3,'#cb9e78',5.5);
-    line(7,-69,elbowX+1,-53,'#2e7bc6',9.5);
-    line(elbowX+1,-53,grip.x-1,grip.y+3,'#d9aa82',6.5);
+    // Elbows ride with the hands, so a raised follow-through never leaves a
+    // sleeve hanging below the gloves.
+    const elbowX=mix(11,grip.x*.55+7,t);
+    const farY=mix(-65,(grip.y-73)/2,t),nearY=mix(-57,(grip.y-69)/2+4,t);
+    line(3,-73,elbowX,farY,'#1f5f9f',8.5);
+    line(elbowX,farY,grip.x+1,grip.y-3,'#cb9e78',5.5);
+    line(7,-69,elbowX+2,nearY,'#2e7bc6',9.5);
+    line(elbowX+2,nearY,grip.x-1,grip.y+3,'#d9aa82',6.5);
     const dx=toe.x-grip.x,dy=toe.y-grip.y;
     line(grip.x,grip.y,grip.x+dx*.32,grip.y+dy*.32,'#293f50',4);
     line(grip.x+dx*.32,grip.y+dy*.32,toe.x,toe.y,'#e8c789',9);
