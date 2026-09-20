@@ -39,7 +39,7 @@ const URL = process.env.URL || 'http://localhost:5174';
       while ((s.pending || s.phase !== 'delivery') && guard++ < 6000) step(16);
       s.line = line; s.bounce = bounce;
       guard = 0;
-      while (s.time < s.flight + off && guard++ < 6000) step(8);
+      while (s.time < s.flight - D.SWING.contact + off && guard++ < 6000) step(8);
       D.shot(side);
 
       const wrongSide = side !== Math.sign(line) && Math.abs(line) >= .12;

@@ -23,10 +23,14 @@ const bag=[-1,-1,-1,1,1,1];for(let i=5;i>0;i--){const j=Math.floor(.5*(i+1));[ba
 // Run-up starts after the ready banner disappears. Each six returns to run-up.
 for(let i=0;i<12;i++){
  await step(i===0?125:127);
- await step(167);
+ // Swing before arrival so the blade reaches the ball at the crease.
+ await page.evaluate(()=>{const d=window.BoundaryBashDebug,s=d.state();s.time=s.flight-d.SWING.contact;});
  const side=bag[5-i%6];
  if(i%2===0)await page.keyboard.press(side<0?'ArrowLeft':'ArrowRight');
  else await page.locator(side<0?'#left':'#right').dispatchEvent('pointerdown',{pointerType:'touch'});
+ const contact=await page.evaluate(()=>{const s=window.BoundaryBashDebug.state();return {at:s.contactAt,flight:s.flight,runs:s.pending.runs};});
+ assert.ok(Math.abs(contact.at-contact.flight)<1e-9);
+ assert.equal(contact.runs,6);
  // The shot resolves when the bat reaches the ball, a beat after the press,
  // so step through the downswing before reading the result.
  await step(20);
@@ -62,8 +66,25 @@ await page.setViewportSize({width:844,height:390});await step(1);
 await page.screenshot({path:'artifacts/arcade-landscape-menu.png'});
 await page.getByRole('button',{name:"LET'S BAT"}).click();await step(350);
 await page.screenshot({path:'artifacts/arcade-landscape-game.png'});
+// An early but playable swing resolves at blade contact, before the ball
+// passes the crease. Waiting until arrival is no longer perfect timing.
+const timing=await page.evaluate(()=>{
+ const d=window.BoundaryBashDebug,s=d.state();
+ s.phase='delivery';s.pending=null;s.line=1;s.time=s.flight;
+ d.shot(1);
+ const delayedRuns=s.pending.runs;
+ s.pending=null;s.time=s.flight-d.SWING.contact-.08;
+ d.shot(1);
+ window.stepFrames(18);
+ const before=s.phase;
+ window.stepFrames(2);
+ return {delayedRuns,before,after:s.phase,groundY:s.hitOrigin.groundY,crease:d.geometry().near};
+});
+assert.ok(timing.delayedRuns<6,'waiting until arrival should not be perfect');
+assert.equal(timing.before,'delivery');
+assert.equal(timing.after,'result','resolve at blade contact without waiting past the crease');
+assert.ok(timing.groundY<timing.crease,'early contact stays in front of the crease');
 assert.deepEqual(errors,[]);
 console.log('Browser checks passed: 12-ball innings, keyboard and touch shots, pause, 3-wicket ending, replay, practice, saved record, landscape layout. No JavaScript errors.');
 }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});
-

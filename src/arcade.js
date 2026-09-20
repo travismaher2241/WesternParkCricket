@@ -71,11 +71,12 @@
     s.aim=aimSwing();
     s.swingFrom=backliftPose(s.time);
     s.contactAt=s.time+CONTACT_LEAD;
-    s.pending=rules.judge(s.time-s.flight,side,s.line,difficulty);
+    s.pending=rules.judge(s.contactAt-s.flight,side,s.line,difficulty);
     const button=$(side<0?'left':'right'); button.classList.add('pressed');
     setTimeout(()=>button.classList.remove('pressed'),140);
   }
   function resolve(result) {
+    s.hitOrigin=ballPosition(geometry());
     s.result=result; s.phase='result'; s.time=0;
     s.runs+=result.runs; s.wickets+=Number(result.wicket); s.balls++;
     s.history.push(result.wicket?'W':result.runs);
@@ -129,7 +130,7 @@
     else if(s.phase==='runup'&&s.time>1.05){s.phase='delivery';s.time=0;}
     else if(s.phase==='delivery') {
       if(s.pending){
-        const at=s.pending.missed?s.flight+.20:Math.max(s.contactAt,s.flight+.02);
+        const at=s.pending.missed?s.flight+.20:s.contactAt;
         if(s.time>=at)resolve(s.pending);
       }
       else if(s.time>s.flight+.16)resolve(rules.miss(s.line,'No shot'));
@@ -331,7 +332,7 @@
     const toe = {x:p.hx+ux*BAT_LEN, y:p.hy+uy*BAT_LEN};
 
     // Shadow on turf
-    ellipse(grip.x*.15+4,3,23,6,'#28533340');
+    ellipse(-2+frontStep*.45,3,21,5.6,'#28533340');
     if(toe.y>-4)ellipse(toe.x,toe.y+1,7,2.5,'#28533330');
 
     const inContact = s.swinging && swingT >= SWING.contact-.01 && swingT <= SWING.extend+.04;
@@ -347,10 +348,12 @@
     const farElbow={x:mix(sxFar,topGrip.x,.45)+6,y:mix(syFar,topGrip.y,.5)+3};
     const nearElbow={x:mix(sxNear,botGrip.x,.45)+4,y:mix(syNear,botGrip.y,.5)+4};
 
-    // 1. Far (Front) Leg - stepped forward, bent knee
-    const fKneeX=9+frontStep*.6,fKneeY=-28;
-    const fFootX=11+frontStep,fFootY=-1;
-    line(2+bodyTilt,-47,fKneeX,fKneeY,'#1c5aa8',11);
+    // 1. Far (Front) Leg. Side on, this leg is directly behind the back one,
+    //    so in the stance it is hidden and only a sliver of it shows. It comes
+    //    out from behind the body when he strides into a shot.
+    const fKneeX=-2+frontStep*.75,fKneeY=-28;
+    const fFootX=-4+frontStep*1.2,fFootY=-1;
+    line(-1+bodyTilt,-47,fKneeX,fKneeY,'#1c5aa8',11);
     poly([[fKneeX-4,fKneeY-5],[fKneeX+5,fKneeY-3],[fFootX+5,fFootY-3],[fFootX-4,fFootY-3]],'#f4f5ee','#b8beaf',1.2);
     line(fKneeX-3,fKneeY,fKneeX+4,fKneeY,'#ccd1c2',2.2);
     line(fKneeX-3,fKneeY+7,fFootX-3,fFootY-4,'#d8ddd0',1.5);
@@ -360,9 +363,10 @@
     poly([[fFootX-4,fFootY-2],[fFootX+8,fFootY-2],[fFootX+10,fFootY+1],[fFootX-5,fFootY+1]],'#ffffff','#ccd1c2',1);
     line(fFootX-5,fFootY+1.5,fFootX+10,fFootY+1.5,'#293f50',2);
 
-    // 2. Near (Back) Leg - pivots up onto the toe as the hips open
-    const bKneeX=-5-hipTurn*.10,bKneeY=-27-heel*.45;
-    const bFootX=-6-hipTurn*.06,bFootY=-heel*.55;
+    // 2. Near (Back) Leg - the one you actually see. It rocks back and up onto
+    //    the toe for a shot off the back foot.
+    const bKneeX=-5-hipTurn*.10-heel*.55,bKneeY=-27-heel*.45;
+    const bFootX=-6-hipTurn*.06-heel*.85,bFootY=-heel*.55;
     line(-4+bodyTilt,-47,bKneeX,bKneeY,'#164887',11);
     poly([[bKneeX-4,bKneeY-5],[bKneeX+4,bKneeY-3],[bFootX+4,bFootY-3],[bFootX-4,bFootY-3]],'#ecefe5','#b2b8a8',1.2);
     line(bKneeX-3,bKneeY,bKneeX+3,bKneeY,'#c4cab9',2);
@@ -550,8 +554,8 @@
     }
     if(s.phase==='result'&&!s.result.wicket&&!s.result.missed){
       const t=clamp(s.time/1.15,0,1),runs=s.result.runs;
-      const x=g.cx+s.line*g.spread*BALL_SPREAD+s.side*t*(runs>=4?width*.63:width*.24);
-      const y=g.near-14*g.scale-(runs===6?Math.sin(t*Math.PI*.7)*height*.67:t*height*.29);
+      const x=s.hitOrigin.x+s.side*t*(runs>=4?width*.63:width*.24);
+      const y=s.hitOrigin.y-(runs===6?Math.sin(t*Math.PI*.7)*height*.67:t*height*.29);
       if(t<1){line(x-s.side*25,y+8,x,y,'#fff7d59c',3);drawBall(x,y,mix(7,3,t),g.near-t*height*.16);}
     }
     if(s.phase==='result'&&s.result.runs>=4){
