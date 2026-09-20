@@ -197,9 +197,16 @@
     line(-17,-18,-7,-20,'#aeb7b0',2);line(-14,-7,-4,-9,'#aeb7b0',2);
     // Side-on shoulders. The darker plane is the back of the shirt.
     poly([[-15,-72],[2,-81],[15,-69],[10,-43],[-10,-38],[-20,-53]],'#246bb4','#173b64',1.5);
-    poly([[-15,-72],[-4,-67],[-3,-41],[-10,-38],[-20,-53]],'#19528e');
-    line(-12,-69,-2,-72,'#a5d0ef',3);
-    ctx.save();ctx.translate(-9,-56);ctx.rotate(-.27);text('LIAM',0,0,6,'#f1f7ff');text('7',0,12,10,'#f1f7ff');ctx.restore();
+    if(s.swing && s.side<0){
+      // Open the chest into a leg-side stroke; the hands cross the front,
+      // never the name/number on the back of an unrotated torso.
+      poly([[2,-81],[15,-69],[10,-43],[5,-43],[7,-67]],'#19528e');
+      line(-12,-65,8,-67,'#a5d0ef',3);
+    }else{
+      poly([[-15,-72],[-4,-67],[-3,-41],[-10,-38],[-20,-53]],'#19528e');
+      line(-12,-69,-2,-72,'#a5d0ef',3);
+      ctx.save();ctx.translate(-9,-56);ctx.rotate(-.27);text('LIAM',0,0,6,'#f1f7ff');text('7',0,12,10,'#f1f7ff');ctx.restore();
+    }
     // Only the nape is visible. No camera-facing face or frontal grille.
     line(-1,-82,2,-87,'#d7a57c',7);
     ellipse(0,-93,13,13,'#164b83');
@@ -211,14 +218,19 @@
     line(-8,-98,-4,-99,'#0f3860',2);line(-7,-94,-3,-95,'#0f3860',2);
     // Backlift before the ball arrives, then downswing and follow-through.
     const lift=s.phase==='delivery'&&!s.swing?clamp(s.time/s.flight,.0,1):0;
-    let grip={x:17,y:-53},toe={x:29+lift*8,y:-5-lift*73};
+    let grip={x:31,y:-55},toe={x:39+lift*8,y:-9-lift*73};
     if(s.swing){
       const contactX=(s.line*geometry().spread*.38+17*geometry().scale)/(h/100);
-      if(t<.32){const u=t/.32;grip={x:mix(17,contactX*.46,u),y:mix(-53,-39,u)};toe={x:mix(37,contactX,u),y:mix(-78,-10,u)};}
+      if(t<.32){const u=t/.32;grip={x:mix(31,contactX*.46,u),y:mix(-55,-39,u)};toe={x:mix(47,contactX,u),y:mix(-78,-10,u)};}
       else {const u=(t-.32)/.68;grip={x:mix(contactX*.46,s.side*25,u),y:mix(-39,-73,u)};toe={x:mix(contactX,s.side*48,u),y:mix(-10,-114,u)};}
     }
-    line(4,-74,19,-63,'#2e7bc6',10);line(19,-63,grip.x,grip.y,'#d9aa82',7);
-    line(-15,-66,-4,-55,'#1e5d9b',10);line(-4,-55,grip.x-3,grip.y+4,'#d9aa82',7);
+    // Both elbows lead from the chest-facing edge. Never draw a forearm
+    // across the shirt's back: that reads as hands clasped behind the waist.
+    const elbowX=mix(23,grip.x*.55+12,t);
+    line(6,-75,elbowX,-68,'#2369ac',9);
+    line(elbowX,-68,grip.x+1,grip.y-3,'#d9aa82',6);
+    line(12,-67,elbowX-2,-49,'#2e7bc6',10);
+    line(elbowX-2,-49,grip.x-2,grip.y+3,'#d9aa82',7);
     const dx=toe.x-grip.x,dy=toe.y-grip.y;
     line(grip.x,grip.y,grip.x+dx*.32,grip.y+dy*.32,'#293f50',4);
     line(grip.x+dx*.32,grip.y+dy*.32,toe.x,toe.y,'#e8c789',10);
