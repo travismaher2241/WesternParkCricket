@@ -54,7 +54,8 @@
       s.bag=[-1,-1,-1,1,1,1];
       for (let i=5;i>0;i--) {const j=Math.floor(Math.random()*(i+1));[s.bag[i],s.bag[j]]=[s.bag[j],s.bag[i]];}
     }
-    s.line=s.bag.pop()*(.72+Math.random()*.28);
+    // Mix attacking straight deliveries with balls outside the wicket.
+    s.line=s.bag.pop()*(s.balls%3===2 ? .08+Math.random()*.02 : .72+Math.random()*.28);
     s.flight=rules.levels[difficulty].flight*(.94+Math.random()*.14);
     s.bounce=.58+Math.random()*.08;
     feedback('', '');
@@ -62,12 +63,12 @@
   }
   function shot(side) {
     if(s.paused || s.phase!=='delivery' || s.pending) return;
-    s.side=side; s.swing=.001;
+    s.side=side; s.swing=.12;
     s.pending=rules.judge(s.time-s.flight,side,s.line,difficulty);
     const button=$(side<0?'left':'right'); button.classList.add('pressed');
     setTimeout(()=>button.classList.remove('pressed'),140);
     // Misses continue to the wicket rather than teleporting away on an early press.
-    if (!s.pending.wicket) resolve(s.pending);
+    if (!s.pending.missed) resolve(s.pending);
   }
   function resolve(result) {
     s.result=result; s.phase='result'; s.time=0;
@@ -76,7 +77,7 @@
     if(result.runs===4)s.fours++; if(result.runs===6)s.sixes++;
     feedback(result.title,result.detail); hud();
     if(result.wicket) {audio.stumps();audio.groan();}
-    else {audio.bat(result.runs>=4?1:.55);if(result.runs>=4)audio.applause(result.runs/6);}
+    else if(!result.missed) {audio.bat(result.runs>=4?1:.55);if(result.runs>=4)audio.applause(result.runs/6);}
     $('instruction').textContent=s.practice?'PRACTICE · ESC TO FINISH':`${Math.max(0,12-s.balls)} BALLS LEFT · ${Math.max(0,3-s.wickets)} WICKETS IN HAND`;
   }
   function finish() {
@@ -122,8 +123,8 @@
     if(s.phase==='ready'&&s.time>1.65)nextBall();
     else if(s.phase==='runup'&&s.time>1.05){s.phase='delivery';s.time=0;}
     else if(s.phase==='delivery') {
-      if(s.pending&&s.time>=s.flight)resolve(s.pending);
-      else if(s.time>s.flight+rules.levels[difficulty].window*1.65)resolve({runs:0,wicket:true,title:'BOWLED!',detail:'No shot — press left or right as it reaches Liam'});
+      if(s.pending&&s.time>=s.flight+.16)resolve(s.pending);
+      else if(s.time>s.flight+.16)resolve(rules.miss(s.line,'No shot'));
     } else if(s.phase==='result'&&s.time>(s.result.runs>=4?2.15:1.65)) {
       if(rules.complete(s))finish();else nextBall();
     }
@@ -154,53 +155,106 @@
     const boardX=width*.80;ctx.fillStyle='#193c45';ctx.fillRect(boardX-52,by-47,104,47);text('FINDEX OVAL',boardX,by-34,9,'#c7d9b8');text(`${s.runs} / ${s.wickets}`,boardX,by-11,18,'#ffdf77');line(boardX-40,by,boardX-40,by+15,'#506751',4);line(boardX+40,by,boardX+40,by+15,'#506751',4);
     [width*.06,width*.94].forEach(x=>{line(x,horizon+8,x,horizon-99,'#b7c4bc',3);ctx.fillStyle='#dee3d6';ctx.fillRect(x-17,horizon-104,34,11);});
     // Boundary rope and a few parents on the grass.
-    ctx.strokeStyle='#f1ead6';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(g.cx,horizon+16,width*.66,height*.31,0,0,Math.PI);ctx.stroke();
+    const ropeTop=horizon+16,ropeBottom=height*1.13;
+    ctx.strokeStyle='#f1ead6';ctx.lineWidth=3;ctx.beginPath();
+    ctx.ellipse(g.cx,(ropeTop+ropeBottom)/2,width*.61,(ropeBottom-ropeTop)/2,0,0,Math.PI*2);ctx.stroke();
     for(let i=0;i<16;i++){const x=width*(.02+i*.064),y=horizon+12+(i%3)*4;ellipse(x,y-9,3,3,'#dbaf89');line(x,y-5,x,y+3,i%2?'#274c75':'#ddcbb1',5);}
     // Pitch with a broad, readable near crease.
     poly([[g.cx-22,g.far-12],[g.cx+22,g.far-12],[g.cx+g.spread*.73,g.near+25],[g.cx-g.spread*.73,g.near+25]],'#d8c28a');
     poly([[g.cx-13,g.far],[g.cx+15,g.far],[g.cx+g.spread*.50,g.near+25],[g.cx-g.spread*.48,g.near+25]],'#dfca94');
     for(let i=0;i<48;i++){const t=(i*.618)%1,x=g.cx+Math.sin(i*14)*mix(12,g.spread*.56,t);line(x,mix(g.far,g.near,t),x+2,mix(g.far,g.near,t)+1,'#b69f6a55',1);}
     line(g.cx-35,g.far+12,g.cx+35,g.far+12,'#f8f3d8',2);
+    line(g.cx-25,g.far+3,g.cx+25,g.far+3,'#f8f3d8',2);
+    [-1,1].forEach(sign=>line(g.cx+sign*25,g.far-7,g.cx+sign*28,g.far+12,'#f8f3d8',2));
     line(g.cx-g.spread*.85,g.near-3,g.cx+g.spread*.85,g.near-3,'#fff0ba',4);
+    const wicketY=g.near+28*g.scale;
+    line(g.cx-g.spread*.59,wicketY,g.cx+g.spread*.59,wicketY,'#fff0ba',2);
+    [-1,1].forEach(sign=>line(g.cx+sign*g.spread*.57,g.near-3,g.cx+sign*g.spread*.65,wicketY+8,'#fff0ba',2));
     if(s.practice){line(g.cx-g.spread*.7,g.near-8,g.cx+g.spread*.7,g.near-8,'#ffd25c',3);text('HIT HERE',g.cx+g.spread*.94,g.near-5,10,'#173b38','left');}
   }
   function stumps(x,y,h,broken){for(let i=-1;i<=1;i++)line(x+i*h*.15,y,x+i*h*.15+(broken?i*h*.7:0),y-h,'#f8ecce',Math.max(2,h*.075));if(!broken)line(x-h*.21,y-h,x+h*.21,y-h,'#fff5d7',Math.max(2,h*.06));else{line(x-h*.8,y-h*1.2,x-h*.4,y-h*1.3,'#fff5d7',3);}}
-  function person(x,y,h,role,pose=0,side=1) {
+  // A dedicated right-handed batting rig, viewed from behind the striker.
+  // Front shoulder/foot lead up the pitch; the helmet looks towards the bowler.
+  // Pads are seen edge-on and the hands stay together throughout the stroke.
+  function batter(x,y,h) {
+    ctx.save();ctx.translate(x,y);ctx.scale(h/100,h/100);
+    const t=s.swing?clamp(s.swing/.38,0,1):0;
+    const step=Math.sin(t*Math.PI)*9;
+    ellipse(0,2,23,5,'#28533340');
+    // Far (front) leg: bent knee and a foot pointing across the crease.
+    line(1,-43,9+step,-32-step,'#e4e8dc',12);
+    line(9+step,-32-step,12+step,-12-step,'#e4e8dc',11);
+    line(9+step,-11-step,23+step,-12-step,'#17394d',7);
+    // Pad fronts face the off side, not the camera: a narrow outer surface.
+    poly([[12+step,-35-step],[19+step,-33-step],[20+step,-15-step],[13+step,-13-step]],'#f8efd5','#bdc0af',1);
+    line(13+step,-27-step,19+step,-26-step,'#c2beaa',1);
+    line(14+step,-21-step,20+step,-20-step,'#c2beaa',1);
+    // Near (back) leg stays grounded, behind the popping crease.
+    line(-9,-42,-13,-24,'#eef0e3',13);
+    line(-13,-24,-7,5,'#eef0e3',12);
+    line(-10,6,6,6,'#17394d',7);
+    poly([[-8,-29],[-2,-27],[2,0],[-5,3]],'#eee4c7','#bdc0af',1);
+    line(-17,-18,-7,-20,'#aeb7b0',2);line(-14,-7,-4,-9,'#aeb7b0',2);
+    // Side-on shoulders. The darker plane is the back of the shirt.
+    poly([[-15,-72],[2,-81],[15,-69],[10,-43],[-10,-38],[-20,-53]],'#246bb4','#173b64',1.5);
+    poly([[-15,-72],[-4,-67],[-3,-41],[-10,-38],[-20,-53]],'#19528e');
+    line(-12,-69,-2,-72,'#a5d0ef',3);
+    ctx.save();ctx.translate(-9,-56);ctx.rotate(-.27);text('LIAM',0,0,6,'#f1f7ff');text('7',0,12,10,'#f1f7ff');ctx.restore();
+    // Only the nape is visible. No camera-facing face or frontal grille.
+    line(-1,-82,2,-87,'#d7a57c',7);
+    ellipse(0,-93,13,13,'#164b83');
+    ellipse(-3,-95,9,10,'#215c99');
+    // Peak and small far-side grille point up the pitch (towards the bowler).
+    poly([[3,-105],[17,-107],[19,-103],[10,-100]],'#103b67');
+    line(13,-101,17,-95,'#acbcc5',1.6);line(17,-95,13,-89,'#acbcc5',1.6);
+    line(-9,-88,5,-85,'#103657',3);
+    line(-8,-98,-4,-99,'#0f3860',2);line(-7,-94,-3,-95,'#0f3860',2);
+    // Backlift before the ball arrives, then downswing and follow-through.
+    const lift=s.phase==='delivery'&&!s.swing?clamp(s.time/s.flight,.0,1):0;
+    let grip={x:17,y:-53},toe={x:29+lift*8,y:-5-lift*73};
+    if(s.swing){
+      const contactX=(s.line*geometry().spread*.38+17*geometry().scale)/(h/100);
+      if(t<.32){const u=t/.32;grip={x:mix(17,contactX*.46,u),y:mix(-53,-39,u)};toe={x:mix(37,contactX,u),y:mix(-78,-10,u)};}
+      else {const u=(t-.32)/.68;grip={x:mix(contactX*.46,s.side*25,u),y:mix(-39,-73,u)};toe={x:mix(contactX,s.side*48,u),y:mix(-10,-114,u)};}
+    }
+    line(4,-74,19,-63,'#2e7bc6',10);line(19,-63,grip.x,grip.y,'#d9aa82',7);
+    line(-15,-66,-4,-55,'#1e5d9b',10);line(-4,-55,grip.x-3,grip.y+4,'#d9aa82',7);
+    const dx=toe.x-grip.x,dy=toe.y-grip.y;
+    line(grip.x,grip.y,grip.x+dx*.32,grip.y+dy*.32,'#293f50',4);
+    line(grip.x+dx*.32,grip.y+dy*.32,toe.x,toe.y,'#e8c789',10);
+    line(grip.x+dx*.4-2,grip.y+dy*.4,toe.x-2,toe.y,'#fff0be',2);
+    ellipse(grip.x-2,grip.y+3,5,4,'#fff5dc');ellipse(grip.x+1,grip.y-3,5,4,'#fff5dc');
+    ctx.restore();
+  }
+  function person(x,y,h,role,pose=0) {
     ctx.save();ctx.translate(x,y);ctx.scale(h/100,h/100);
     ellipse(0,2,21,5,'#28533340');
-    const bat=role==='batter', ump=role==='umpire', kit=bat?'#256dc0':ump?'#e8e6d7':'#e97d41';
-    const stride=bat?0:Math.sin(pose)*12;
+    const ump=role==='umpire',kit=ump?'#e8e6d7':role==='partner'?'#256dc0':'#e97d41';
+    const stride=Math.sin(pose)*12;
     line(-7,-39,-10-stride,0,ump?'#293d47':'#f6efdc',10);line(7,-39,11+stride,0,ump?'#293d47':'#f6efdc',10);
     line(-11-stride,1,-4-stride,1,'#213b49',6);line(10+stride,1,18+stride,1,'#213b49',6);
     poly([[-17,-76],[14,-76],[12,-39],[-12,-39]],kit,'#173a5150',1.2);
-    line(-12,-66,12,-66,bat?'#aed6fa':'#ffe4ba',3);
+    line(-12,-66,12,-66,'#ffe4ba',3);
     ellipse(0,-88,11,12,'#e6b187');
-    if(bat){ellipse(-2,-93,13,10,'#164982');line(-13,-87,13,-87,'#123b60',4);line(4,-84,13,-82,'#beced4',2);line(13,-82,10,-74,'#beced4',2);}
-    else {ellipse(0,-97,12,4,ump?'#fff9dc':'#b9572b');if(ump)line(-18,-94,18,-94,'#fff9dc',4);}
-    if(bat){
-      // White pads and an oversized willow bat make the contact point clear.
-      line(-10,-28,-11,-5,'#fff7dc',12);line(9,-28,11,-5,'#fff7dc',12);
-      for(let i=0;i<3;i++){line(-14,-23+i*7,-6,-23+i*7,'#c7c7b5',1);line(5,-23+i*7,14,-23+i*7,'#c7c7b5',1);}
-      const progress=s.swing?clamp(s.swing/.24,0,1):0;
-      const angle=s.swing?mix(-1.1,side*1.9,progress):-.35;
-      const hx=side*(s.swing?13:8),hy=-53;
-      line(-14,-70,hx,hy,kit,9);line(14,-70,hx+3,hy+3,kit,9);ellipse(hx,hy,6,5,'#fff4d6');
-      ctx.save();ctx.translate(hx,hy);ctx.rotate(angle);line(0,0,0,16,'#324854',5);line(0,17,0,49,'#efd39a',11);line(-2,21,-2,46,'#fff0c4',2);ctx.restore();
-      text('LIAM',0,-49,7,'#eaf3ff');
-    }else{
-      const release=s.phase==='delivery'&&role==='bowler';
-      line(-15,-71,-21+stride,-44,kit,8);line(15,-71,release?8:23-stride,release?-119:-44,kit,8);
-      ellipse(release?8:23-stride,release?-119:-44,4,4,'#e6b187');
-    }
+    ellipse(0,-97,12,4,ump?'#fff9dc':role==='partner'?'#164982':'#b9572b');
+    if(ump)line(-18,-94,18,-94,'#fff9dc',4);
+    const release=s.phase==='delivery'&&role==='bowler';
+    const follow=release?clamp((s.time-.10)/.30,0,1):0;
+    const handX=release?mix(8,-14,follow):23-stride;
+    const handY=release?mix(-119,-40,follow):-44;
+    line(-15,-71,-21+stride,-44,kit,8);line(15,-71,handX,handY,kit,8);
+    ellipse(handX,handY,4,4,'#e6b187');
+    if(role==='partner')line(23,-43,28,0,'#e8c789',7);
     ctx.restore();
   }
   function ballPosition(g) {
-    const t=clamp(s.time/s.flight,0,1.18),pers=t*t*.45+t*.55;
-    const groundY=mix(g.far,g.near,pers);
+    const t=clamp(s.time/s.flight,0,1),pers=t*t*.45+t*.55;
+    const past=clamp((s.time-s.flight)/.16,0,1);
+    const groundY=mix(g.far,g.near,pers)+past*28*g.scale;
     const x=mix(g.cx+35.6*g.scale,g.cx+s.line*g.spread*.38,pers);
     let z;
     if(t<s.bounce)z=83.3*g.scale*(1-t/s.bounce);
-    else {const u=(t-s.bounce)/(1-s.bounce);z=Math.sin(clamp(u,0,1)*Math.PI)*29*g.scale;}
+    else {const u=(t-s.bounce)/(1-s.bounce);z=(45*u-31*u*u)*g.scale*(1-past*.5);}
     return {x,y:groundY-z,groundY,r:mix(3,8,clamp(t,0,1))*Math.max(.7,g.scale)};
   }
   function drawBall(x,y,r,shadowY){
@@ -217,23 +271,24 @@
     // The bowler's-end umpire looks straight down the pitch from behind the wicket.
     person(g.cx,g.far-28*g.scale,60*g.scale,'umpire');
     stumps(g.cx,g.far+3,23*g.scale,false);
+    person(g.cx-48*g.scale,g.far+10,62*g.scale,'partner');
+    person(g.cx-Math.min(width*.39,360),g.near-3,65*g.scale,'umpire');
     const run=s.phase==='runup'?clamp(s.time/1.05,0,1):1;
     person(g.cx+30*g.scale,g.far-27*(1-run),70*g.scale,'bowler',s.phase==='runup'?s.time*19:0);
     const bh=clamp(136*g.scale,87,150);
-    const shift=s.swing?clamp(s.swing/.13,0,1):0;
-    const batterX=mix(g.cx-36*g.scale,g.cx+s.side*g.spread*.24,shift);
+    const batterX=g.cx-17*g.scale;
     // Smaller screen Y is up the pitch: Liam stands at the popping crease,
     // ahead of his wicket. Draw the nearer stumps last for correct overlap.
-    person(batterX,g.near-3,bh,'batter',0,s.side);
+    batter(batterX,g.near-3,bh);
     stumps(g.cx,g.near+28*g.scale,48*g.scale,s.phase==='result'&&s.result.wicket);
     if(s.phase==='delivery'){
       const b=ballPosition(g);drawBall(b.x,b.y,b.r,b.groundY);
       if(s.practice){const t=clamp(s.time/s.flight,0,1);ctx.globalAlpha=.8;line(g.cx-45,g.near+40,g.cx+45,g.near+40,'#173b38',5);line(g.cx-45,g.near+40,g.cx-45+90*t,g.near+40,'#ffdc6d',5);ctx.globalAlpha=1;}
     }
-    if(s.phase==='result'&&!s.result.wicket){
+    if(s.phase==='result'&&!s.result.wicket&&!s.result.missed){
       const t=clamp(s.time/1.15,0,1),runs=s.result.runs;
       const x=g.cx+s.line*g.spread*.38+s.side*t*(runs>=4?width*.63:width*.24);
-      const y=g.near-(runs===6?Math.sin(t*Math.PI*.7)*height*.67:t*height*.29);
+      const y=g.near-14*g.scale-(runs===6?Math.sin(t*Math.PI*.7)*height*.67:t*height*.29);
       if(t<1){line(x-s.side*25,y+8,x,y,'#fff7d59c',3);drawBall(x,y,mix(7,3,t),g.near-t*height*.16);}
     }
     if(s.phase==='result'&&s.result.runs>=4){

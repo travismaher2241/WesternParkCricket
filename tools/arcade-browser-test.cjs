@@ -29,8 +29,14 @@ for(let i=0;i<12;i++){
  else await page.locator(side<0?'#left':'#right').dispatchEvent('pointerdown',{pointerType:'touch'});
  assert.equal(await page.locator('#feedback b').innerText(),'SIX!',`delivery ${i+1}`);
  assert.equal(await page.locator('#score').innerText(),`${(i+1)*6}/0`);
- if(i===0)await page.screenshot({path:'artifacts/arcade-six.png'});
- await step(259);
+ if(i===0){
+  await step(1);await page.waitForTimeout(150);
+  await page.screenshot({path:'artifacts/arcade-six.png'});
+  await step(25);await page.screenshot({path:'artifacts/arcade-follow-through.png'});
+  await step(233);
+ }else if(i===1){
+  await step(1);await page.screenshot({path:'artifacts/arcade-left-contact.png'});await step(258);
+ }else await step(259);
 }
 assert.equal(await page.locator('#results').isVisible(),true);
 assert.equal(await page.locator('#finalScore').innerText(),'72/0');
@@ -38,7 +44,7 @@ await page.screenshot({path:'artifacts/arcade-results.png'});
 await page.reload();await step(1);
 assert.equal(await page.locator('#target').innerText(),'72');
 await page.getByRole('button',{name:"LET'S BAT"}).click();
-await step(2200);
+await step(6000);
 assert.equal(await page.locator('#results').isVisible(),true);
 assert.equal(await page.locator('#finalScore').innerText(),'0/3');
 await page.getByRole('button',{name:'Back to menu',exact:true}).click();

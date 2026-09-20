@@ -18,7 +18,7 @@ Then visit http://localhost:5174.
 - **Escape:** pause or resume. Switching tabs pauses automatically.
 - **Sound button:** toggle sound effects.
 
-The challenge is 12 balls with three wickets. Good timing scores runs; sweet timing scores six. A wrong-side shot or a badly mistimed swing costs a wicket. Backyard, Club and All-star increase delivery speed and tighten timing windows. Practice continues without an innings limit and marks the contact crease in gold. Personal bests are saved locally, separately for each difficulty; practice does not affect records.
+The challenge is 12 balls with three wickets. Good timing scores runs; sweet timing scores six. Missing a straight delivery can bowl you; a missed ball outside the stumps is a dot ball. Backyard, Club and All-star increase delivery speed and tighten timing windows. Practice continues without an innings limit and marks the contact crease in gold. Personal bests are saved locally, separately for each difficulty; practice does not affect records.
 
 ## Design
 
