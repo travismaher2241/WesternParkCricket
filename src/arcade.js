@@ -163,7 +163,6 @@
     line(g.cx-35,g.far+12,g.cx+35,g.far+12,'#f8f3d8',2);
     line(g.cx-g.spread*.85,g.near-3,g.cx+g.spread*.85,g.near-3,'#fff0ba',4);
     if(s.practice){line(g.cx-g.spread*.7,g.near-8,g.cx+g.spread*.7,g.near-8,'#ffd25c',3);text('HIT HERE',g.cx+g.spread*.94,g.near-5,10,'#173b38','left');}
-    stumps(g.cx,g.far+3,23*g.scale,false);
   }
   function stumps(x,y,h,broken){for(let i=-1;i<=1;i++)line(x+i*h*.15,y,x+i*h*.15+(broken?i*h*.7:0),y-h,'#f8ecce',Math.max(2,h*.075));if(!broken)line(x-h*.21,y-h,x+h*.21,y-h,'#fff5d7',Math.max(2,h*.06));else{line(x-h*.8,y-h*1.2,x-h*.4,y-h*1.3,'#fff5d7',3);}}
   function person(x,y,h,role,pose=0,side=1) {
@@ -198,9 +197,9 @@
   function ballPosition(g) {
     const t=clamp(s.time/s.flight,0,1.18),pers=t*t*.45+t*.55;
     const groundY=mix(g.far,g.near,pers);
-    const x=g.cx+s.line*g.spread*.38*pers;
+    const x=mix(g.cx+35.6*g.scale,g.cx+s.line*g.spread*.38,pers);
     let z;
-    if(t<s.bounce)z=44*g.scale*(1-t/s.bounce);
+    if(t<s.bounce)z=83.3*g.scale*(1-t/s.bounce);
     else {const u=(t-s.bounce)/(1-s.bounce);z=Math.sin(clamp(u,0,1)*Math.PI)*29*g.scale;}
     return {x,y:groundY-z,groundY,r:mix(3,8,clamp(t,0,1))*Math.max(.7,g.scale)};
   }
@@ -215,14 +214,18 @@
       if(s.phase==='result'&&s.result.runs>0&&Math.sign(px-g.cx)===s.side){px+=s.side*Math.min(s.time,1)*32;py+=Math.sin(i)*s.time*8;}
       person(px,py,48*g.scale,'fielder',s.phase==='result'?s.time*12:0);
     });
-    person(g.cx-38*g.scale,g.far-6,60*g.scale,'umpire');
+    // The bowler's-end umpire looks straight down the pitch from behind the wicket.
+    person(g.cx,g.far-28*g.scale,60*g.scale,'umpire');
+    stumps(g.cx,g.far+3,23*g.scale,false);
     const run=s.phase==='runup'?clamp(s.time/1.05,0,1):1;
-    person(g.cx+12*g.scale,g.far-27*(1-run),70*g.scale,'bowler',s.phase==='runup'?s.time*19:0);
+    person(g.cx+30*g.scale,g.far-27*(1-run),70*g.scale,'bowler',s.phase==='runup'?s.time*19:0);
     const bh=clamp(136*g.scale,87,150);
     const shift=s.swing?clamp(s.swing/.13,0,1):0;
     const batterX=mix(g.cx-36*g.scale,g.cx+s.side*g.spread*.24,shift);
-    stumps(g.cx,g.near+18,48*g.scale,s.phase==='result'&&s.result.wicket);
-    person(batterX,g.near+20,bh,'batter',0,s.side);
+    // Smaller screen Y is up the pitch: Liam stands at the popping crease,
+    // ahead of his wicket. Draw the nearer stumps last for correct overlap.
+    person(batterX,g.near-3,bh,'batter',0,s.side);
+    stumps(g.cx,g.near+28*g.scale,48*g.scale,s.phase==='result'&&s.result.wicket);
     if(s.phase==='delivery'){
       const b=ballPosition(g);drawBall(b.x,b.y,b.r,b.groundY);
       if(s.practice){const t=clamp(s.time/s.flight,0,1);ctx.globalAlpha=.8;line(g.cx-45,g.near+40,g.cx+45,g.near+40,'#173b38',5);line(g.cx-45,g.near+40,g.cx-45+90*t,g.near+40,'#ffdc6d',5);ctx.globalAlpha=1;}
