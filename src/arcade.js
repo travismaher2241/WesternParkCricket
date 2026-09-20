@@ -189,6 +189,10 @@
   // Angles are degrees: 0 hangs straight down, positive swings the toe to the
   // off side.
   const BAT_LEN = 43;
+  // How far his head turns up the pitch to watch the bowler, in degrees.
+  // Three quarters rather than square on: the helmet art is drawn in profile,
+  // so turning it all the way to the bowler makes him look at the sky.
+  const EYELINE = -36;
   const pose = (ang,hx,hy,tilt,step,head,hip,heel) => ({ang,hx,hy,tilt,step,head,hip,heel});
   const STANCE    = pose(   4, 10, -41,  0,  0,  0,   0, 0);
   const BACKLIFT  = pose(-152,  6, -53, -2,  0, -1,  -4, 0);
@@ -379,25 +383,33 @@
     poly([[hx-4,hy],[hx,hy],[sxNear-1,syNear],[sxNear-3,syNear]],'#13467e');
     line(hx+1,hy,sxNear+1,syNear,'#ffd25c',2);
 
-    // 4. Head, Neck & Helmet (Side-on profile), dropping into the shot
+    // 4. Head, Neck & Helmet. The bowler is up the pitch, not square, so the
+    //    helmet turns to face him and then follows the ball down as Liam
+    //    plays: the same number that drops his head into the shot swings his
+    //    eyeline from up the pitch to down at the ball and back up after it.
     const neckX=7+bodyTilt*.6+hipTurn*.18,neckY=-76+headDrop*.4;
     const headX=(lookBack?3:11)+bodyTilt*.7+hipTurn*.24;
     const headY=-89+headDrop;
+    const look=lookBack?0:clamp(EYELINE+headDrop*10,-85,22);
     line(neckX,neckY,headX-1,headY+5,'#e5aa82',6.5);
-    ellipse(headX,headY,11,10.5,'#15447b');
-    ellipse(headX-2,headY-3,7,6,'#2261a8');
 
+    ctx.save();
+    ctx.translate(headX,headY);
+    ctx.rotate(look*Math.PI/180);
+    ellipse(0,0,11,10.5,'#15447b');
+    ellipse(-2,-3,7,6,'#2261a8');
     if(!lookBack){
-      poly([[headX+5,headY-1],[headX+16,headY-3],[headX+17,headY+1],[headX+8,headY+2]],'#0e325c');
-      poly([[headX+5,headY+1],[headX+9,headY+3],[headX+7,headY+6],[headX+8,headY+9],[headX+2,headY+9]],'#e5aa82');
-      ellipse(headX+6,headY+2,1.2,1.2,'#122338');
-      line(headX-1,headY+3,headX+7,headY+8,'#b5c4cc',1.6);
-      line(headX+2,headY+1,headX+7,headY+8,'#b5c4cc',1.4);
-      line(headX+4,headY+4,headX+8,headY+7,'#b5c4cc',1.2);
+      poly([[5,-1],[16,-3],[17,1],[8,2]],'#0e325c');
+      poly([[5,1],[9,3],[7,6],[8,9],[2,9]],'#e5aa82');
+      ellipse(6,2,1.2,1.2,'#122338');
+      line(-1,3,7,8,'#b5c4cc',1.6);
+      line(2,1,7,8,'#b5c4cc',1.4);
+      line(4,4,8,7,'#b5c4cc',1.2);
     }else{
-      poly([[headX-5,headY-1],[headX-15,headY-2],[headX-16,headY+2],[headX-8,headY+3]],'#0e325c');
-      ellipse(headX-5,headY+3,1.2,1.2,'#122338');
+      poly([[-5,-1],[-15,-2],[-16,2],[-8,3]],'#0e325c');
+      ellipse(-5,3,1.2,1.2,'#122338');
     }
+    ctx.restore();
 
     // 5. Far (Front) Arm
     line(sxFar,syFar,farElbow.x,farElbow.y,'#1c5fa8',7);
