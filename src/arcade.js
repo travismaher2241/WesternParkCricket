@@ -44,14 +44,14 @@
   }
   function start(practice) {
     audio.resume();
-    s = {phase:'ready',runs:0,wickets:0,balls:0,history:[],practice,time:0,swing:0,swinging:false,side:1,fours:0,sixes:0,paused:false};
-    overlay(null); feedback('READY, LIAM?', 'Watch the ball. Hit left or right.'); hud();
-    $('instruction').textContent = practice ? 'PRACTICE · HIT AT THE GOLD CREASE' : '12 BALLS · 3 WICKETS · MAKE THEM COUNT';
+    s = {phase:'ready',runs:0,wickets:0,balls:0,history:[],practice,time:0,swing:0,swinging:false,side:0,fours:0,sixes:0,paused:false,debug:s?s.debug:false};
+    overlay(null); feedback('READY, LIAM?', 'Watch the ball. Hit Left, Straight, or Right.'); hud();
+    $('instruction').textContent = practice ? 'PRACTICE · HIT AT THE GOLD CREASE' : '12 BALLS · 3 WICKETS · LEFT, STRAIGHT, OR RIGHT';
   }
   function nextBall() {
     // Ease out of the last shot instead of snapping back to the stance.
     s.resetFrom = s.swinging ? swingPose(s.swing) : null;
-    s.phase='runup'; s.time=0; s.swing=0; s.swinging=false; s.result=null; s.pending=null; s.contactAt=null; s.aim=null;
+    s.phase='runup'; s.time=0; s.swing=0; s.swinging=false; s.result=null; s.pending=null; s.contactAt=null;
     // A balanced shuffled bag avoids a long run of balls on just one side.
     if (!s.bag || !s.bag.length) {
       s.bag=[-1,-1,-1,1,1,1];
@@ -68,12 +68,14 @@
     if(s.paused || s.phase!=='delivery' || s.pending) return;
     s.side=side; s.swing=0; s.swinging=true;
     s.stroke=pickStroke(side);
-    s.aim=aimSwing();
     s.swingFrom=backliftPose(s.time);
     s.contactAt=s.time+CONTACT_LEAD;
     s.pending=rules.judge(s.contactAt-s.flight,side,s.line,difficulty);
-    const button=$(side<0?'left':'right'); button.classList.add('pressed');
-    setTimeout(()=>button.classList.remove('pressed'),140);
+    const button=$(side<0?'left':side>0?'right':'straight');
+    if(button){
+      button.classList.add('pressed');
+      setTimeout(()=>button.classList.remove('pressed'),140);
+    }
   }
   function resolve(result) {
     s.hitOrigin=ballPosition(geometry());
@@ -81,6 +83,58 @@
     s.runs+=result.runs; s.wickets+=Number(result.wicket); s.balls++;
     s.history.push(result.wicket?'W':result.runs);
     if(result.runs===4)s.fours++; if(result.runs===6)s.sixes++;
+
+    // Compute authentic stroke-driven ball launch physics
+    const baseAngle = s.side < 0 ? -32 : s.side > 0 ? 32 : 0; // degrees (0=straight, negative=screen left, positive=screen right)
+    const timingOffset = s.contactAt ? s.contactAt - s.flight : 0;
+    let timingDrift = 0;
+    if (timingOffset < -0.03) {
+      timingDrift = Math.min(1, (-timingOffset - 0.03) / 0.12) * (s.side <= 0 ? 10 : -8);
+    } else if (timingOffset > 0.03) {
+      timingDrift = -Math.min(1, (timingOffset - 0.03) / 0.12) * (s.side >= 0 ? 10 : -8);
+    }
+    const launchAngle = baseAngle + timingDrift;
+    const launchRad = launchAngle * Math.PI / 180;
+
+    // Power & velocity from timing quality and outcome
+    let speed = 0;
+    if (!result.missed && !result.wicket) {
+      if (result.runs === 6) speed = width * 0.72;
+      else if (result.runs === 4) speed = width * 0.58;
+      else if (result.runs === 2) speed = width * 0.38;
+      else if (result.runs === 1) speed = width * 0.28;
+      else speed = width * 0.18;
+    }
+
+    const vx = Math.sin(launchRad) * speed;
+    const vy = -Math.cos(launchRad) * speed;
+    const maxHeight = result.runs === 6 ? height * 0.65 : result.runs === 4 ? height * 0.12 : height * 0.07;
+    const duration = result.runs >= 4 ? 1.3 : 1.0;
+
+    s.ballFlight = {
+      x0: s.hitOrigin.x,
+      y0: s.hitOrigin.y,
+      groundY0: s.hitOrigin.groundY,
+      vx,
+      vy,
+      launchAngle,
+      speed,
+      maxHeight,
+      duration,
+      runs: result.runs
+    };
+
+    s.lastDebug = {
+      shot: s.stroke ? s.stroke.toUpperCase() : 'STRAIGHT',
+      sideName: s.side < 0 ? 'LEFT (OFF-SIDE)' : s.side > 0 ? 'RIGHT (ON-SIDE)' : 'STRAIGHT (DOWN GROUND)',
+      timing: result.timing || (result.missed ? 'MISSED' : 'TIMED'),
+      contactPoint: { x: Math.round(s.hitOrigin.x), y: Math.round(s.hitOrigin.y) },
+      launchAngle: (launchAngle >= 0 ? '+' : '') + launchAngle.toFixed(1) + '°',
+      launchVelocity: Math.round(speed) + ' px/s',
+      runs: result.runs,
+      wicket: result.wicket
+    };
+
     feedback(result.title,result.detail); hud();
     if(result.wicket) {audio.stumps();audio.groan();}
     else if(!result.missed) {audio.bat(result.runs>=4?1:.55);if(result.runs>=4)audio.applause(result.runs/6);}
@@ -112,14 +166,21 @@
   });
   $('left').addEventListener('pointerdown',e=>{e.preventDefault();shot(-1);});
   $('right').addEventListener('pointerdown',e=>{e.preventDefault();shot(1);});
+  const straightBtn=$('straight');
+  if(straightBtn){straightBtn.addEventListener('pointerdown',e=>{e.preventDefault();shot(0);});straightBtn.onclick=e=>{if(e.detail===0)shot(0);};}
   // Keyboard activation of the on-screen controls remains accessible.
   $('left').onclick=e=>{if(e.detail===0)shot(-1);};$('right').onclick=e=>{if(e.detail===0)shot(1);};
   addEventListener('keydown',e=>{
     if(e.repeat)return;
     if(e.key==='Escape'){pause();return;}
+    if(e.key==='`'||e.key==='~'){s.debug=!s.debug;return;}
     const key=e.key.toLowerCase();
-    if(['arrowleft','arrowright','a','d'].includes(key)&&!['menu','finished'].includes(s.phase)){
-      e.preventDefault();shot(key==='arrowleft'||key==='a'?-1:1);
+    if(['arrowleft','a'].includes(key)&&!['menu','finished'].includes(s.phase)){
+      e.preventDefault();shot(-1);
+    }else if(['arrowright','d'].includes(key)&&!['menu','finished'].includes(s.phase)){
+      e.preventDefault();shot(1);
+    }else if(['arrowup','w',' ','arrowdown','s'].includes(key)&&!['menu','finished'].includes(s.phase)){
+      e.preventDefault();shot(0);
     }
   });
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&!s.paused&&!['menu','finished'].includes(s.phase))pause();});
@@ -199,22 +260,25 @@
   const CELEBRATE = pose(-146, -8, -66, -6,  2, -5,   0, 0);
   const SLUMP     = pose(  26, 12, -34, 10,  0,  8,   0, 0);
 
-  // Four strokes. Which one Liam plays is read off the length of the ball,
-  // so a short one is pulled or cut and a fuller one is driven or flicked.
+  // Three authentic shot families:
+  // Left: Off-side cover drive / punch (blade sweeps out to screen left)
+  // Straight: Clean straight drive (blade swings down vertical plane past bowler)
+  // Right: On-drive / leg-side flick (hips rotate, blade rolls to screen right)
   const STROKES = {
-    pull:  { contact: pose( -86, 15, -42,  3, 1,  2,  9, 3),
-             extend:  pose(-126,  7, -52,  6, 1,  1, 17, 6),
-             finish:  pose(-212, -4, -57,  9, 0, -2, 23, 9) },
-    flick: { contact: pose( -14, 18, -45,  4, 7,  4,  4, 1),
-             extend:  pose( -58, 14, -52,  6, 8,  3, 11, 3),
-             finish:  pose(-158,  4, -60,  7, 8,  0, 17, 6) },
-    cut:   { contact: pose(  72, 15, -49,  1, 2,  2, -5, 4),
-             extend:  pose( 104, 10, -56,  3, 2,  1,-10, 6),
-             finish:  pose( 148,  3, -59,  5, 1, -1,-14, 8) },
-    drive: { contact: pose(  20, 20, -46,  5,10,  5,  2, 2),
-             extend:  pose(  58, 20, -51,  6,11,  4,  6, 4),
-             finish:  pose( 126, 12, -59,  6,11,  1, 10, 7) }
+    left:     { contact: pose(-26, 18, -44, 4, 10, 4,  3, 2),
+                extend:  pose(-66, 15, -50, 6, 10, 2,  6, 3),
+                finish:  pose(-115, 8, -58, 7, 10, 0, 10, 5) },
+    straight: { contact: pose( -2, 19, -46, 5, 11, 4,  2, 2),
+                extend:  pose(  8, 19, -52, 6, 11, 3,  5, 3),
+                finish:  pose( 35, 13, -60, 6, 11, 1,  8, 5) },
+    right:    { contact: pose( 28, 17, -44, 3,  6, 3,  6, 2),
+                extend:  pose( 68, 13, -50, 5,  6, 2, 12, 4),
+                finish:  pose(135,  4, -58, 6,  5, 0, 18, 6) }
   };
+  STROKES.pull = STROKES.left;
+  STROKES.cut = STROKES.left;
+  STROKES.drive = STROKES.straight;
+  STROKES.flick = STROKES.right;
 
   // Press to contact. A perfectly timed press puts the bat on the ball at the
   // moment it reaches the crease, which is why the delivery resolves here too.
@@ -226,7 +290,7 @@
   const easeInOut = u => u<.5 ? 2*u*u : 1-Math.pow(-2*u+2,2)/2;
   const smooth = u => u*u*(3-2*u);
 
-  // Shift  by whole turns so it is the nearest equivalent angle to .
+  // Shift by whole turns so it is the nearest equivalent angle.
   function nearAngle(from,to){ let d=(to-from)%360; if(d>180)d-=360; if(d<-180)d+=360; return from+d; }
   function lerpPose(a,b,t){
     return pose(mix(a.ang,b.ang,t),mix(a.hx,b.hx,t),mix(a.hy,b.hy,t),mix(a.tilt,b.tilt,t),
@@ -235,75 +299,49 @@
   // The backlift is picked up as the bowler releases, not snapped into place.
   function liftAt(time){ return clamp((time-.05)/Math.max(.2,(s.flight||1)*.72),0,1); }
   function backliftPose(time){ return lerpPose(STANCE,BACKLIFT,smooth(liftAt(time))); }
-  // Liam plays at the line of the ball rather than at a fixed spot. The
-  // reach peaks at contact and fades out through the follow-through.
+  // Lateral line reach only: subtle hand adjustment for lateral ball line without angular distortion.
   function reachAt(t){
     if (t < SWING.back || t > SWING.finish) return 0;
     const u = t < SWING.contact ? (t-SWING.back)/(SWING.contact-SWING.back)
                                 : 1-(t-SWING.contact)/(SWING.finish-SWING.contact);
-    return clamp((s.line||0)*5,-5,5)*clamp(u,0,1);
+    return clamp((s.line||0)*4,-4,4)*clamp(u,0,1);
   }
-  // Where the ball will be when the bat gets there, in the batter's own
-  // 100-unit space.
   function ballAtContact(){
     const g=geometry(), bh=clamp(136*g.scale,87,150), unit=bh/100;
     const rise=Math.pow(1-s.bounce,2)*340*g.scale;
     return { x:((s.line*g.spread*BALL_SPREAD)+20*g.scale)/unit, y:(3-rise*.624)/unit };
   }
-  // Aim the stroke without losing its shape: rotate the blade toward the
-  // ball by at most a stroke's worth, and let him stretch a little for one
-  // he cannot otherwise cover.
-  function aimSwing(){
-    const k=STROKES[s.stroke]||STROKES.drive, b=ballAtContact();
-    const hx=k.contact.hx+clamp(s.line*5,-5,5), hy=k.contact.hy;
-    const want=Math.atan2(b.x-hx,b.y-hy)*180/Math.PI;
-    // Generous, on purpose: a cross-bat stroke straightens up when the ball
-    // is at the stumps, which is what a batter actually does. The stroke keeps
-    // its identity from the backlift, the footwork and the follow-through.
-    const dAng=clamp(nearAngle(k.contact.ang,want)-k.contact.ang,-70,70);
-    const dist=Math.hypot(b.x-hx,b.y-hy);
-    const stretch=clamp(dist-BAT_LEN*.88,0,11);
-    const a=(k.contact.ang+dAng)*Math.PI/180;
-    return { dAng, dHx:Math.sin(a)*stretch, dHy:Math.cos(a)*stretch };
-  }
-  function applyAim(p,weight){
-    const a=s.aim; if(!a) return p;
-    p.ang+=a.dAng*weight; p.hx+=a.dHx*weight; p.hy+=a.dHy*weight; return p;
-  }
+
   function pickStroke(side){
-    const shortBall = s.bounce < .62;
-    return side < 0 ? (shortBall?'pull':'flick') : (shortBall?'cut':'drive');
+    if (side === 0) return 'straight';
+    return side < 0 ? 'left' : 'right';
   }
 
   /* The swing itself. Accelerating down into the ball, a short drive through
-     the line, a decelerating follow-through, then a relaxed recovery. It
-     starts from wherever the bat actually was when the key went down, so an
-     early press never teleports the bat to the top of the backlift. */
+     the line, a decelerating follow-through, then a relaxed recovery. */
   function swingPose(t){
     const p = swingShape(t);
     p.hx += reachAt(t);
     return p;
   }
   function swingShape(t){
-    const k = STROKES[s.stroke] || STROKES.drive;
+    const k = STROKES[s.stroke] || STROKES.straight;
     const from = s.swingFrom || BACKLIFT;
     if (t < SWING.back)    return lerpPose(from, BACKLIFT, easeOut(t/SWING.back));
     if (t < SWING.contact) {
       const u = easeIn((t-SWING.back)/(SWING.contact-SWING.back));
-      return applyAim(lerpPose(BACKLIFT, k.contact, u), u);
+      return lerpPose(BACKLIFT, k.contact, u);
     }
     if (t < SWING.extend) {
       const u = (t-SWING.contact)/(SWING.extend-SWING.contact);
-      return applyAim(lerpPose(k.contact, k.extend, u), 1-u*.3);
+      return lerpPose(k.contact, k.extend, u);
     }
     if (t < SWING.finish) {
       const u = easeOut((t-SWING.extend)/(SWING.finish-SWING.extend));
-      return applyAim(lerpPose(k.extend, k.finish, u), .7-u*.7);
+      return lerpPose(k.extend, k.finish, u);
     }
     const done = s.result || s.pending || {};
     const target = done.runs >= 4 ? CELEBRATE : done.wicket ? SLUMP : STANCE;
-    // Unwind the bat the short way round, so a cut does not whip back down
-    // through vertical to reach a finish that is only a few degrees further on.
     const settle = pose(nearAngle(k.finish.ang,target.ang),target.hx,target.hy,target.tilt,target.step,target.head,target.hip,target.heel);
     return lerpPose(k.finish, settle, easeInOut(clamp((t-SWING.finish)/(SWING.rest-SWING.finish),0,1)));
   }
@@ -564,19 +602,56 @@
       const b=ballPosition(g);drawBall(b.x,b.y,b.r,b.groundY);
       if(s.practice){const t=clamp(s.time/s.flight,0,1);ctx.globalAlpha=.8;line(g.cx-45,g.near+40,g.cx+45,g.near+40,'#173b38',5);line(g.cx-45,g.near+40,g.cx-45+90*t,g.near+40,'#ffdc6d',5);ctx.globalAlpha=1;}
     }
-    if(s.phase==='result'&&!s.result.wicket&&!s.result.missed){
-      const t=clamp(s.time/1.15,0,1),runs=s.result.runs;
-      const x=s.hitOrigin.x+s.side*t*(runs>=4?width*.63:width*.24);
-      const y=s.hitOrigin.y-(runs===6?Math.sin(t*Math.PI*.7)*height*.67:t*height*.29);
-      if(t<1){line(x-s.side*25,y+8,x,y,'#fff7d59c',3);drawBall(x,y,mix(7,3,t),g.near-t*height*.16);}
+    if(s.phase==='result'&&!s.result.wicket&&!s.result.missed&&s.ballFlight){
+      const bf=s.ballFlight;
+      const t=clamp(s.time/bf.duration,0,1);
+      const x=bf.x0+bf.vx*t;
+      const y=bf.y0+bf.vy*t-Math.sin(t*Math.PI)*bf.maxHeight;
+      const groundY=bf.groundY0+bf.vy*t*0.35;
+      if(t<1){
+        line(x-bf.vx*.04,y-bf.vy*.04,x,y,'#fff7d59c',3);
+        drawBall(x,y,mix(7,3.2,t),groundY);
+      }
     }
     if(s.phase==='result'&&s.result.runs>=4){
       for(let i=0;i<32;i++){const t=s.time,x=width*((i*.618)%1),y=height*.12+t*(55+i%7*16);ctx.save();ctx.translate(x+Math.sin(i+t*3)*15,y);ctx.rotate(i+t*2);ctx.fillStyle=i%2?'#ffcf56':'#f4edcf';ctx.fillRect(-3,-2,6,4);ctx.restore();}
+    }
+    if(s.debug){
+      // Debug Vector Arrow from contact point
+      if(s.ballFlight){
+        const bf=s.ballFlight, vLen=85;
+        const rad=bf.launchAngle*Math.PI/180;
+        const endX=bf.x0+Math.sin(rad)*vLen, endY=bf.y0-Math.cos(rad)*vLen;
+        line(bf.x0,bf.y0,endX,endY,'#00ffcc',3);
+        ellipse(bf.x0,bf.y0,4,4,'#ff0055');
+        // Arrowhead
+        line(endX,endY,endX-Math.sin(rad+.45)*10,endY+Math.cos(rad+.45)*10,'#00ffcc',3);
+        line(endX,endY,endX-Math.sin(rad-.45)*10,endY+Math.cos(rad-.45)*10,'#00ffcc',3);
+      }
+      // Debug HUD Panel
+      ctx.save();
+      const hudW=260, hudH=124;
+      const hudX=width-hudW-16, hudY=102;
+      ctx.fillStyle='rgba(12,24,34,0.92)';
+      ctx.fillRect(hudX,hudY,hudW,hudH);
+      ctx.strokeStyle='#00ffcc';ctx.lineWidth=1.5;
+      ctx.strokeRect(hudX,hudY,hudW,hudH);
+      ctx.font='bold 11px monospace';ctx.textAlign='left';
+      ctx.fillStyle='#00ffcc';
+      ctx.fillText('DEBUG MODE [Toggle: ` or ~]',hudX+10,hudY+18);
+      const dbg=s.lastDebug||{};
+      ctx.fillStyle='#ffffff';
+      ctx.fillText(`SHOT:    ${dbg.shot||(s.stroke?s.stroke.toUpperCase():'NONE')}`,hudX+10,hudY+38);
+      ctx.fillText(`TIMING:  ${dbg.timing||'WAITING'}`,hudX+10,hudY+56);
+      ctx.fillText(`CONTACT: ${dbg.contactPoint?`${dbg.contactPoint.x}, ${dbg.contactPoint.y}`:'N/A'}`,hudX+10,hudY+74);
+      ctx.fillText(`LAUNCH:  ${dbg.launchAngle||'0°'} @ ${dbg.launchVelocity||'0 px/s'}`,hudX+10,hudY+92);
+      ctx.fillText(`RESULT:  ${dbg.runs!==undefined?`${dbg.runs} RUNS`+(dbg.wicket?' (W)':' '):'READY'}`,hudX+10,hudY+110);
+      ctx.restore();
     }
   }
   function frame(now) {const dt=last?Math.min((now-last)/1000,.05):0;last=now;update(dt);draw();requestAnimationFrame(frame);}
   // Development hook. Lets the browser checks drive a delivery and inspect a
   // swing frame by frame instead of waiting on real time.
-  window.BoundaryBashDebug={state:()=>s,geometry,pickStroke,swingPose,backliftPose,shot,SWING,STROKES,ballAtContact};
+  window.BoundaryBashDebug={state:()=>s,geometry,pickStroke,swingPose,backliftPose,shot,SWING,STROKES,ballAtContact,toggleDebug:()=>{s.debug=!s.debug;}};
   hud();overlay('menu');requestAnimationFrame(frame);
 })();

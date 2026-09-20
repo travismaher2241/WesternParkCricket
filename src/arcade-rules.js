@@ -8,12 +8,23 @@
   }
   function judge(offset, side, line, difficulty) {
     const w = levels[difficulty].window, error = Math.abs(offset);
-    if (side !== Math.sign(line) && Math.abs(line) >= .12) return miss(line, 'Wrong side');
-    if (error > w * 1.65) return miss(line, offset < 0 ? 'Too early' : 'Too late');
-    if (error > w) return { runs: 0, wicket: false, title: 'DOT BALL', detail: offset < 0 ? 'Early — off the toe of the bat' : 'Late — straight to the fielder' };
-    if (error < w * .25) return { runs: 6, wicket: false, title: 'SIX!', detail: 'Sweet timing. Out of the park!' };
-    if (error < w * .55) return { runs: 4, wicket: false, title: 'FOUR!', detail: 'Cracking shot. Beats the field!' };
-    return { runs: error < w * .8 ? 2 : 1, wicket: false, title: error < w * .8 ? 'TWO RUNS' : 'ONE RUN', detail: offset < 0 ? 'A little early — keep watching' : 'A little late — good enough for runs' };
+    let timing = 'GOOD';
+    if (error > w * 1.65) timing = offset < 0 ? 'VERY EARLY' : 'VERY LATE';
+    else if (error > w) timing = offset < 0 ? 'EARLY' : 'LATE';
+    else if (error < w * .25) timing = 'PERFECT';
+    else if (error < w * .55) timing = 'GOOD';
+    else timing = 'DECENT';
+
+    if (side === 0) {
+      if (Math.abs(line) > .55) return Object.assign(miss(line, 'Outside line for straight drive'), { timing });
+    } else if (side !== Math.sign(line) && Math.abs(line) >= .12) {
+      return Object.assign(miss(line, 'Wrong side'), { timing });
+    }
+    if (error > w * 1.65) return Object.assign(miss(line, offset < 0 ? 'Too early' : 'Too late'), { timing });
+    if (error > w) return { runs: 0, wicket: false, timing, title: 'DOT BALL', detail: offset < 0 ? 'Early — off the toe of the bat' : 'Late — straight to the fielder' };
+    if (error < w * .25) return { runs: 6, wicket: false, timing, title: 'SIX!', detail: 'Sweet timing. Out of the park!' };
+    if (error < w * .55) return { runs: 4, wicket: false, timing, title: 'FOUR!', detail: 'Cracking shot. Beats the field!' };
+    return { runs: error < w * .8 ? 2 : 1, wicket: false, timing, title: error < w * .8 ? 'TWO RUNS' : 'ONE RUN', detail: offset < 0 ? 'A little early — keep watching' : 'A little late — good enough for runs' };
   }
   function complete(state) { return !state.practice && (state.balls >= 12 || state.wickets >= 3); }
   const api = { levels, judge, miss, complete };
