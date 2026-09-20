@@ -173,69 +173,204 @@
     if(s.practice){line(g.cx-g.spread*.7,g.near-8,g.cx+g.spread*.7,g.near-8,'#ffd25c',3);text('HIT HERE',g.cx+g.spread*.94,g.near-5,10,'#173b38','left');}
   }
   function stumps(x,y,h,broken){for(let i=-1;i<=1;i++)line(x+i*h*.15,y,x+i*h*.15+(broken?i*h*.7:0),y-h,'#f8ecce',Math.max(2,h*.075));if(!broken)line(x-h*.21,y-h,x+h*.21,y-h,'#fff5d7',Math.max(2,h*.06));else{line(x-h*.8,y-h*1.2,x-h*.4,y-h*1.3,'#fff5d7',3);}}
-  // A dedicated right-handed batting rig, viewed from behind the striker.
-  // Front shoulder/foot lead up the pitch; the helmet looks towards the bowler.
-  // Pads are seen edge-on and the hands stay together throughout the stroke.
+  // An authentic side-on cricket batsman holding the bat with normal hands.
+  // Profile faces down the pitch with an athletic forward lean over the popping crease,
+  // white batting pads, helmet peak focused on the bowler, and gloved hands gripping the handle.
   function batter(x,y,h) {
     ctx.save();ctx.translate(x,y);ctx.scale(h/100,h/100);
+
     const t=s.swing?clamp(s.swing/.38,0,1):0;
-    const step=Math.sin(t*Math.PI)*9;
-    ellipse(0,2,23,5,'#28533340');
-    // Far (front) leg: bent knee and a foot pointing across the crease.
-    line(1,-43,9+step,-32-step,'#e4e8dc',12);
-    line(9+step,-32-step,12+step,-12-step,'#e4e8dc',11);
-    line(9+step,-11-step,23+step,-12-step,'#17394d',7);
-    // Pad fronts face the off side, not the camera: a narrow outer surface.
-    poly([[12+step,-35-step],[19+step,-33-step],[20+step,-15-step],[13+step,-13-step]],'#f8efd5','#bdc0af',1);
-    line(13+step,-27-step,19+step,-26-step,'#c2beaa',1);
-    line(14+step,-21-step,20+step,-20-step,'#c2beaa',1);
-    // Near (back) leg stays grounded, behind the popping crease.
-    line(-9,-42,-13,-24,'#eef0e3',13);
-    line(-13,-24,-7,5,'#eef0e3',12);
-    line(-10,6,6,6,'#17394d',7);
-    poly([[-8,-29],[-2,-27],[2,0],[-5,3]],'#eee4c7','#bdc0af',1);
-    line(-17,-18,-7,-20,'#aeb7b0',2);line(-14,-7,-4,-9,'#aeb7b0',2);
-    // Side-on shoulders. The darker plane is the back of the shirt.
-    poly([[-15,-72],[2,-81],[15,-69],[10,-43],[-10,-38],[-20,-53]],'#246bb4','#173b64',1.5);
-    if(s.swing && s.side<0){
-      // Open the chest into a leg-side stroke; the hands cross the front,
-      // never the name/number on the back of an unrotated torso.
-      poly([[2,-81],[15,-69],[10,-43],[5,-43],[7,-67]],'#19528e');
-      line(-12,-65,8,-67,'#a5d0ef',3);
+    const isDelivery=s.phase==='delivery'&&!s.swing;
+    const isResult=s.phase==='result';
+    const isWicket=isResult&&s.result&&s.result.wicket;
+    const isBoundary=isResult&&s.result&&s.result.runs>=4;
+
+    // Rhythmic bat tap in ready stance
+    const tap=(!s.swing&&!isDelivery&&!isResult)?(Math.sin(s.time*8)>0.25?-2.5:0):0;
+
+    // Backlift as bowler delivers
+    const lift=isDelivery?clamp(s.time/(s.flight*.82),0,1):0;
+    const liftEase=Math.sin(lift*Math.PI*.5);
+
+    let grip={x:10,y:-41+tap};
+    let toe={x:12,y:1+Math.max(0,tap)};
+    let bodyTilt=0;
+    let frontStep=0;
+    let headTurn=0;
+
+    if(lift>0){
+      grip={x:mix(10,5,liftEase),y:mix(-41,-56,liftEase)};
+      toe={x:mix(12,-16,liftEase),y:mix(1,-62,liftEase)};
+      bodyTilt=-liftEase*2;
+    }else if(s.swing){
+      if(s.side<0){
+        // HIT LEFT (Leg Side: Pull / Hook / Flick)
+        if(t<.34){
+          const u=t/.34,uEase=u*u;
+          grip={x:mix(6,12,uEase),y:mix(-56,-40,uEase)};
+          toe={x:mix(-15,16,uEase),y:mix(-62,-16,uEase)};
+          frontStep=Math.sin(u*Math.PI*.5)*4;
+        }else{
+          const u=(t-.34)/.66,uEase=Math.sin(u*Math.PI*.5);
+          grip={x:mix(12,-18,uEase),y:mix(-40,-64,uEase)};
+          toe={x:mix(16,-34,uEase),y:mix(-16,-108,uEase)};
+          bodyTilt=uEase*6;
+          frontStep=4-uEase*2;
+        }
+      }else{
+        // HIT RIGHT (Off Side: Cover Drive / Square Cut)
+        if(t<.34){
+          const u=t/.34,uEase=u*u;
+          grip={x:mix(6,22,uEase),y:mix(-56,-42,uEase)};
+          toe={x:mix(-15,30,uEase),y:mix(-62,-20,uEase)};
+          frontStep=Math.sin(u*Math.PI*.5)*8;
+          bodyTilt=uEase*4;
+        }else{
+          const u=(t-.34)/.66,uEase=Math.sin(u*Math.PI*.5);
+          grip={x:mix(22,28,uEase),y:mix(-42,-68,uEase)};
+          toe={x:mix(30,46,uEase),y:mix(-20,-114,uEase)};
+          frontStep=8+uEase*2;
+          bodyTilt=4-uEase*2;
+        }
+      }
+    }else if(isWicket){
+      grip={x:9,y:-36};
+      toe={x:11,y:1};
+      headTurn=-1;
+      bodyTilt=-3;
+    }else if(isBoundary){
+      if(s.side<0){
+        grip={x:-18,y:-64};
+        toe={x:-34,y:-108};
+        bodyTilt=5;
+      }else{
+        grip={x:28,y:-68};
+        toe={x:46,y:-114};
+        bodyTilt=3;
+        frontStep=9;
+      }
+    }
+
+    // Shadow on turf
+    ellipse(grip.x*.15+4,3,23,6,'#28533340');
+    if(toe.y>-4)ellipse(toe.x,toe.y+1,7,2.5,'#28533330');
+
+    // Vector calculations for bat
+    const bdx=toe.x-grip.x,bdy=toe.y-grip.y;
+    const batLen=Math.hypot(bdx,bdy)||1;
+    const ux=bdx/batLen,uy=bdy/batLen;
+    const nx=-uy,ny=ux;
+
+    // Joint anchors
+    const sxFar=9+bodyTilt,syFar=-74;
+    const sxNear=3+bodyTilt,syNear=-73;
+    const topGrip={x:grip.x-ux*6,y:grip.y-uy*6};
+    const botGrip={x:grip.x,y:grip.y};
+    const farElbow={x:mix(sxFar,topGrip.x,.45)+6,y:mix(syFar,topGrip.y,.5)+3};
+    const nearElbow={x:mix(sxNear,botGrip.x,.45)+4,y:mix(syNear,botGrip.y,.5)+4};
+
+    // 1. Far (Front) Leg - stepped forward, bent knee
+    const fKneeX=9+frontStep*.6,fKneeY=-28;
+    const fFootX=11+frontStep,fFootY=-1;
+    line(2+bodyTilt,-47,fKneeX,fKneeY,'#1c5aa8',11);
+    poly([[fKneeX-4,fKneeY-5],[fKneeX+5,fKneeY-3],[fFootX+5,fFootY-3],[fFootX-4,fFootY-3]],'#f4f5ee','#b8beaf',1.2);
+    line(fKneeX-3,fKneeY,fKneeX+4,fKneeY,'#ccd1c2',2.2);
+    line(fKneeX-3,fKneeY+7,fFootX-3,fFootY-4,'#d8ddd0',1.5);
+    line(fKneeX+1,fKneeY+7,fFootX+1,fFootY-4,'#d8ddd0',1.5);
+    line(fKneeX-4,fKneeY+4,fKneeX-2,fKneeY+4,'#8a948c',2);
+    line(fFootX-4,fFootY-7,fFootX-2,fFootY-7,'#8a948c',2);
+    poly([[fFootX-4,fFootY-2],[fFootX+8,fFootY-2],[fFootX+10,fFootY+1],[fFootX-5,fFootY+1]],'#ffffff','#ccd1c2',1);
+    line(fFootX-5,fFootY+1.5,fFootX+10,fFootY+1.5,'#293f50',2);
+
+    // 2. Near (Back) Leg - grounded near popping crease
+    const bKneeX=-5,bKneeY=-27;
+    const bFootX=-6,bFootY=0;
+    line(-4+bodyTilt,-47,bKneeX,bKneeY,'#164887',11);
+    poly([[bKneeX-4,bKneeY-5],[bKneeX+4,bKneeY-3],[bFootX+4,bFootY-3],[bFootX-4,bFootY-3]],'#ecefe5','#b2b8a8',1.2);
+    line(bKneeX-3,bKneeY,bKneeX+3,bKneeY,'#c4cab9',2);
+    poly([[bFootX-4,bFootY-2],[bFootX+7,bFootY-2],[bFootX+9,bFootY+1],[bFootX-5,bFootY+1]],'#ffffff','#ccd1c2',1);
+    line(bFootX-5,bFootY+1.5,bFootX+9,bFootY+1.5,'#293f50',2);
+
+    // 3. Side-on Torso leaning forward
+    const hx=-3+bodyTilt,hy=-47;
+    poly([[hx-4,hy],[hx+6,hy],[sxFar+3,syFar],[sxNear-3,syNear],[hx-4,hy]],'#1c5fa8','#113c6b',1.2);
+    poly([[hx-4,hy],[hx,hy],[sxNear-1,syNear],[sxNear-3,syNear]],'#13467e');
+    line(hx+1,hy,sxNear+1,syNear,'#ffd25c',2);
+
+    // 4. Head, Neck & Helmet (Side-on profile)
+    const neckX=7+bodyTilt,neckY=-76;
+    const headX=(headTurn<0?3:11)+bodyTilt;
+    const headY=-89;
+    line(neckX,neckY,headX-1,headY+5,'#e5aa82',6.5);
+    ellipse(headX,headY,11,10.5,'#15447b');
+    ellipse(headX-2,headY-3,7,6,'#2261a8');
+
+    if(headTurn>=0){
+      poly([[headX+5,headY-1],[headX+16,headY-3],[headX+17,headY+1],[headX+8,headY+2]],'#0e325c');
+      poly([[headX+5,headY+1],[headX+9,headY+3],[headX+7,headY+6],[headX+8,headY+9],[headX+2,headY+9]],'#e5aa82');
+      ellipse(headX+6,headY+2,1.2,1.2,'#122338');
+      line(headX-1,headY+3,headX+7,headY+8,'#b5c4cc',1.6);
+      line(headX+2,headY+1,headX+7,headY+8,'#b5c4cc',1.4);
+      line(headX+4,headY+4,headX+8,headY+7,'#b5c4cc',1.2);
     }else{
-      poly([[-15,-72],[-4,-67],[-3,-41],[-10,-38],[-20,-53]],'#19528e');
-      line(-12,-69,-2,-72,'#a5d0ef',3);
-      ctx.save();ctx.translate(-9,-56);ctx.rotate(-.27);text('LIAM',0,0,6,'#f1f7ff');text('7',0,12,10,'#f1f7ff');ctx.restore();
+      poly([[headX-5,headY-1],[headX-15,headY-2],[headX-16,headY+2],[headX-8,headY+3]],'#0e325c');
+      ellipse(headX-5,headY+3,1.2,1.2,'#122338');
     }
-    // Only the nape is visible. No camera-facing face or frontal grille.
-    line(-1,-82,2,-87,'#d7a57c',7);
-    ellipse(0,-93,13,13,'#164b83');
-    ellipse(-3,-95,9,10,'#215c99');
-    // Peak and small far-side grille point up the pitch (towards the bowler).
-    poly([[3,-105],[17,-107],[19,-103],[10,-100]],'#103b67');
-    line(13,-101,17,-95,'#acbcc5',1.6);line(17,-95,13,-89,'#acbcc5',1.6);
-    line(-9,-88,5,-85,'#103657',3);
-    line(-8,-98,-4,-99,'#0f3860',2);line(-7,-94,-3,-95,'#0f3860',2);
-    // Backlift before the ball arrives, then downswing and follow-through.
-    const lift=s.phase==='delivery'&&!s.swing?clamp(s.time/s.flight,.0,1):0;
-    let grip={x:31,y:-55},toe={x:39+lift*8,y:-9-lift*73};
-    if(s.swing){
-      const contactX=(s.line*geometry().spread*.38+17*geometry().scale)/(h/100);
-      if(t<.32){const u=t/.32;grip={x:mix(31,contactX*.46,u),y:mix(-55,-39,u)};toe={x:mix(47,contactX,u),y:mix(-78,-10,u)};}
-      else {const u=(t-.32)/.68;grip={x:mix(contactX*.46,s.side*25,u),y:mix(-39,-73,u)};toe={x:mix(contactX,s.side*48,u),y:mix(-10,-114,u)};}
+
+    // 5. Far (Front) Arm
+    line(sxFar,syFar,farElbow.x,farElbow.y,'#1c5fa8',7);
+    line(farElbow.x,farElbow.y,farElbow.x+ux*1.5,farElbow.y+uy*1.5,'#ffd25c',7);
+    line(farElbow.x,farElbow.y,topGrip.x,topGrip.y,'#e5aa82',5.5);
+
+    // 6. Cricket Bat
+    const knobX=grip.x-ux*13,knobY=grip.y-uy*13;
+    const spliceX=grip.x+ux*8,spliceY=grip.y+uy*8;
+    line(knobX,knobY,spliceX,spliceY,'#f2efe9',4.2);
+    for(let r=-11;r<=6;r+=2.5){
+      const rx=grip.x+ux*r,ry=grip.y+uy*r;
+      line(rx-nx*1.8,ry-ny*1.8,rx+nx*1.8,ry+ny*1.8,'#d8d4c7',.8);
     }
-    // Both elbows lead from the chest-facing edge. Never draw a forearm
-    // across the shirt's back: that reads as hands clasped behind the waist.
-    const elbowX=mix(23,grip.x*.55+12,t);
-    line(6,-75,elbowX,-68,'#2369ac',9);
-    line(elbowX,-68,grip.x+1,grip.y-3,'#d9aa82',6);
-    line(12,-67,elbowX-2,-49,'#2e7bc6',10);
-    line(elbowX-2,-49,grip.x-2,grip.y+3,'#d9aa82',7);
-    const dx=toe.x-grip.x,dy=toe.y-grip.y;
-    line(grip.x,grip.y,grip.x+dx*.32,grip.y+dy*.32,'#293f50',4);
-    line(grip.x+dx*.32,grip.y+dy*.32,toe.x,toe.y,'#e8c789',10);
-    line(grip.x+dx*.4-2,grip.y+dy*.4,toe.x-2,toe.y,'#fff0be',2);
-    ellipse(grip.x-2,grip.y+3,5,4,'#fff5dc');ellipse(grip.x+1,grip.y-3,5,4,'#fff5dc');
+    ellipse(knobX,knobY,2.4,2,'#e0dcce');
+
+    const shoulder1=[spliceX+nx*3.6,spliceY+ny*3.6];
+    const shoulder2=[spliceX-nx*3.6,spliceY-ny*3.6];
+    const toe1=[toe.x+nx*4.2,toe.y+ny*4.2];
+    const toe2=[toe.x-nx*4.2,toe.y-ny*4.2];
+    poly([shoulder2,toe2,[toe.x,toe.y],[spliceX,spliceY]],'#c8a466');
+    poly([[spliceX,spliceY],shoulder1,toe1,[toe.x,toe.y]],'#faeed2','#bfa065',1);
+    line(spliceX,spliceY,toe.x,toe.y,'#e5d1a4',1);
+
+    const sTopX=spliceX+(toe.x-spliceX)*.15,sTopY=spliceY+(toe.y-spliceY)*.15;
+    const sBotX=spliceX+(toe.x-spliceX)*.55,sBotY=spliceY+(toe.y-spliceY)*.55;
+    line(sTopX,sTopY,sBotX,sBotY,'#d32f2f',3);
+    line(sTopX,sTopY,sTopX+(sBotX-sTopX)*.7,sTopY+(sBotY-sTopY)*.7,'#ffd25c',1.8);
+
+    // Batting glove drawer helper
+    function drawGlove(gx,gy){
+      ctx.save();ctx.translate(gx,gy);
+      const ang=Math.atan2(uy,ux);ctx.rotate(ang);
+      poly([[-4,-3],[-4,3],[-1,3],[-1,-3]],'#1c5fa8');
+      poly([[-1,-4.5],[6,-4.5],[7,4.5],[-1,4.5]],'#f5f7fa','#d0d7de',1);
+      for(let f=0;f<3;f++){
+        const fx=.5+f*2.2;
+        poly([[fx,-4.2],[fx+1.8,-4.2],[fx+1.8,1.2],[fx,1.2]],'#e9ecef','#bec5cb',.8);
+        line(fx+.4,-2.5,fx+1.4,-2.5,'#1c5fa8',1);
+      }
+      poly([[1,2.5],[5,2.5],[4.5,4.8],[.5,4.8]],'#e9ecef','#bec5cb',.8);
+      ctx.restore();
+    }
+
+    // 7. Top Glove (Left Hand)
+    drawGlove(topGrip.x,topGrip.y);
+
+    // 8. Near (Back) Arm
+    line(sxNear,syNear,nearElbow.x,nearElbow.y,'#1c5fa8',7.5);
+    line(nearElbow.x,nearElbow.y,nearElbow.x+ux*1.5,nearElbow.y+uy*1.5,'#ffd25c',7.5);
+    line(nearElbow.x,nearElbow.y,botGrip.x,botGrip.y,'#e5aa82',5.8);
+
+    // 9. Bottom Glove (Right Hand)
+    drawGlove(botGrip.x,botGrip.y);
+
     ctx.restore();
   }
   function person(x,y,h,role,pose=0) {
@@ -288,7 +423,7 @@
     const run=s.phase==='runup'?clamp(s.time/1.05,0,1):1;
     person(g.cx+30*g.scale,g.far-27*(1-run),70*g.scale,'bowler',s.phase==='runup'?s.time*19:0);
     const bh=clamp(136*g.scale,87,150);
-    const batterX=g.cx-17*g.scale;
+    const batterX=g.cx-20*g.scale;
     // Smaller screen Y is up the pitch: Liam stands at the popping crease,
     // ahead of his wicket. Draw the nearer stumps last for correct overlap.
     batter(batterX,g.near-3,bh);
