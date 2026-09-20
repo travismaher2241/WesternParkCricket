@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Liam at Findex Oval - Western Park Cricket</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="stage"></canvas>
+
+  <!-- ---------------------------------------------------------- in-play HUD -->
+  <div id="hud" class="hidden">
+    <div id="scorestrip">
+      <div class="team">
+        <span id="battingTeam">Western Park</span>
+        <span id="scoreMain">0/0</span>
+        <span id="overs">0.0</span>
+      </div>
+      <div class="chase" id="chaseLine"></div>
+      <div class="batter" id="batterLine"></div>
+      <button id="btnSound" class="chip" title="Sound (M)">&#9835;</button>
+      <button id="btnPause" class="chip" title="Menu (Esc)">&#9776;</button>
+    </div>
+
+    <div id="log"></div>
+
+    <div id="centre" class="hidden"><div id="centreText"></div><div id="centreSub"></div></div>
+
+    <div id="readout" class="hidden"></div>
+
+    <div id="controls">
+      <div id="batControls" class="panel hidden">
+        <div class="row foots">
+          <button class="foot" data-foot="front"><b>&#9650;</b><span>Front foot</span></button>
+          <button class="foot" data-foot="back"><b>&#9660;</b><span>Back foot</span></button>
+        </div>
+        <div class="row aimrow">
+          <button class="aim" data-aim="-1">&#9664;</button>
+          <div id="aimGauge"><div id="aimNeedle"></div><span id="aimLabel">Straight</span></div>
+          <button class="aim" data-aim="1">&#9654;</button>
+        </div>
+        <div class="row shots">
+          <button class="shot" data-shot="defend"><b>J</b><span>Defend</span></button>
+          <button class="shot" data-shot="drive"><b>K</b><span>Drive</span></button>
+          <button class="shot" data-shot="cross"><b>L</b><span>Cut / Pull</span></button>
+          <button class="shot" data-shot="loft"><b>I</b><span>Loft</span></button>
+        </div>
+      </div>
+
+      <div id="bowlControls" class="panel hidden">
+        <div class="row deliveries" id="deliveryRow"></div>
+        <div class="row markerrow">
+          <div class="hintline">Arrows move the landing marker</div>
+          <div id="deliveryNote"></div>
+        </div>
+        <div class="row meters">
+          <div class="meter" id="paceMeter"><label>Pace</label><div class="track"><div class="fill"></div><div class="head"></div></div></div>
+          <div class="meter" id="accMeter"><label>Release</label><div class="track"><div class="zone"></div><div class="head"></div></div></div>
+        </div>
+        <button id="btnBowl" class="primary wide">Bowl &nbsp;<span class="key">Space</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- overlays -->
+  <div id="menu" class="overlay">
+    <div class="sheet">
+      <div class="crest"><span>WP</span></div>
+      <h1>Liam at Findex Oval</h1>
+      <p class="sub">Western Park Warriors &nbsp;&bull;&nbsp; Warragul &nbsp;&bull;&nbsp; two overs each</p>
+      <div class="pillars">
+        <span>Bat first</span><span>Then defend it</span><span>Five minutes</span>
+      </div>
+      <div class="opts">
+        <div class="opt">
+          <label>Difficulty</label>
+          <div class="seg" id="segDiff">
+            <button data-diff="easy">Easy</button>
+            <button data-diff="normal" class="on">Normal</button>
+            <button data-diff="hard">Hard</button>
+          </div>
+        </div>
+        <div class="opt">
+          <label>Liam bats</label>
+          <div class="seg" id="segHand">
+            <button data-hand="right" class="on">Right handed</button>
+            <button data-hand="left">Left handed</button>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="btnQuick" class="primary">Quick match</button>
+        <button id="btnPracticeBat">Practise batting</button>
+        <button id="btnPracticeBowl">Practise bowling</button>
+      </div>
+      <details class="help">
+        <summary>How to play</summary>
+        <div class="helpgrid">
+          <div>
+            <h3>Batting</h3>
+            <p><b>&#9650; / &#9660;</b> front or back foot &mdash; before the ball arrives.</p>
+            <p><b>&#9664; / &#9654;</b> aim inside the arc of your stroke.</p>
+            <p><b>J</b> defend &nbsp; <b>K</b> drive &nbsp; <b>L</b> cut or pull &nbsp; <b>I</b> loft.</p>
+            <p>The shot key <em>is</em> the swing. Press it as the ball reaches you.</p>
+          </div>
+          <div>
+            <h3>Bowling</h3>
+            <p><b>1&ndash;6</b> choose the delivery.</p>
+            <p><b>Arrows</b> move the landing marker on the pitch.</p>
+            <p><b>Space</b> three times: run in, stop the pace bar, then stop the release marker in the middle.</p>
+          </div>
+        </div>
+      </details>
+      <p class="footnote">Grey-box build. Ground, kit and Liam are placeholders until the reference photographs are supplied.</p>
+    </div>
+  </div>
+
+  <div id="pause" class="overlay hidden">
+    <div class="sheet small">
+      <h2>Paused</h2>
+      <div class="actions">
+        <button id="btnResume" class="primary">Resume</button>
+        <button id="btnQuit">Back to menu</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="results" class="overlay hidden">
+    <div class="sheet">
+      <h2 id="resTitle">Match result</h2>
+      <p class="sub" id="resSub"></p>
+      <div id="resCards"></div>
+      <h3>Best moments</h3>
+      <ul id="resMoments"></ul>
+      <div class="actions">
+        <button id="btnAgain" class="primary">Play again</button>
+        <button id="btnMenu">Menu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="src/core/config.js"></script>
+<script src="src/core/rng.js"></script>
+<script src="src/sim/trajectory.js"></script>
+<script src="src/sim/delivery.js"></script>
+<script src="src/sim/bat.js"></script>
+<script src="src/sim/field.js"></script>
+<script src="src/sim/match.js"></script>
+<script src="src/render/view.js"></script>
+<script src="src/render/scene.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
