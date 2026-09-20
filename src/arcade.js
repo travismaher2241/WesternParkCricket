@@ -260,25 +260,31 @@
   const CELEBRATE = pose(-146, -8, -66, -6,  2, -5,   0, 0);
   const SLUMP     = pose(  26, 12, -34, 10,  0,  8,   0, 0);
 
-  // Three authentic shot families:
-  // Left: Off-side cover drive / punch (blade sweeps out to screen left)
-  // Straight: Clean straight drive (blade swings down vertical plane past bowler)
-  // Right: On-drive / leg-side flick (hips rotate, blade rolls to screen right)
+  // Authentic Cricket Stroke Families:
+  // LEFT: Off-side Cover Drive (classical high-elbow drive through cover) / Square Cut (on shorter deliveries)
+  // STRAIGHT: Pure Straight Drive (clean vertical blade driving down the pitch past the bowler)
+  // RIGHT: On-Drive / Leg-Side Flick (wrists rolling through mid-wicket) / Pull (on shorter deliveries)
   const STROKES = {
-    left:     { contact: pose(-26, 18, -44, 4, 10, 4,  3, 2),
-                extend:  pose(-66, 15, -50, 6, 10, 2,  6, 3),
-                finish:  pose(-115, 8, -58, 7, 10, 0, 10, 5) },
-    straight: { contact: pose( -2, 19, -46, 5, 11, 4,  2, 2),
-                extend:  pose(  8, 19, -52, 6, 11, 3,  5, 3),
-                finish:  pose( 35, 13, -60, 6, 11, 1,  8, 5) },
-    right:    { contact: pose( 28, 17, -44, 3,  6, 3,  6, 2),
-                extend:  pose( 68, 13, -50, 5,  6, 2, 12, 4),
-                finish:  pose(135,  4, -58, 6,  5, 0, 18, 6) }
+    coverDrive: { contact: pose( 22, 20, -46, 6, 11,  5,  2, 2),
+                  extend:  pose( 60, 21, -52, 7, 11,  4,  5, 3),
+                  finish:  pose(126, 12, -60, 7, 11,  1,  8, 5) },
+    cut:        { contact: pose( 72, 15, -49, 2,  1,  2, -8, 5),
+                  extend:  pose(104, 11, -56, 3,  1,  1,-12, 6),
+                  finish:  pose(148,  4, -60, 4,  0, -1,-14, 8) },
+    straight:   { contact: pose( 12, 19, -47, 4, 11,  4,  2, 2),
+                  extend:  pose( 48, 19, -53, 5, 11,  3,  4, 3),
+                  finish:  pose(112, 14, -62, 5, 11,  1,  6, 5) },
+    flick:      { contact: pose( 14, 17, -44, 3,  6,  3,  8, 2),
+                  extend:  pose(-55, 13, -50, 4,  6,  2, 14, 4),
+                  finish:  pose(-135, 3, -58, 5,  5,  0, 20, 6) },
+    pull:       { contact: pose( 20, 14, -46, 2, -1,  2, 12, 4),
+                  extend:  pose(-65, 10, -52, 3, -1,  1, 18, 6),
+                  finish:  pose(-145, 2, -58, 4, -2, -1, 24, 8) }
   };
-  STROKES.pull = STROKES.left;
-  STROKES.cut = STROKES.left;
-  STROKES.drive = STROKES.straight;
-  STROKES.flick = STROKES.right;
+  // Aliases for compatibility
+  STROKES.left = STROKES.coverDrive;
+  STROKES.right = STROKES.flick;
+  STROKES.drive = STROKES.coverDrive;
 
   // Press to contact. A perfectly timed press puts the bat on the ball at the
   // moment it reaches the crease, which is why the delivery resolves here too.
@@ -313,8 +319,10 @@
   }
 
   function pickStroke(side){
+    const shortBall = s.bounce < .62;
     if (side === 0) return 'straight';
-    return side < 0 ? 'left' : 'right';
+    if (side < 0) return shortBall ? 'cut' : 'coverDrive';
+    return shortBall ? 'pull' : 'flick';
   }
 
   /* The swing itself. Accelerating down into the ball, a short drive through
@@ -351,7 +359,7 @@
   // crease, white batting pads, helmet peak focused on the bowler, and gloved
   // hands gripping the handle.
   function batter(x,y,h) {
-    ctx.save();ctx.translate(x,y);ctx.scale(h/100,h/100);
+    ctx.save();ctx.translate(x,y);ctx.scale(-h/100,h/100);
 
     const isDelivery = s.phase==='delivery';
     const isResult = s.phase==='result';
@@ -593,7 +601,7 @@
     const run=s.phase==='runup'?clamp(s.time/1.05,0,1):1;
     person(g.cx+30*g.scale,g.far-27*(1-run),70*g.scale,'bowler',s.phase==='runup'?s.time*19:0);
     const bh=clamp(136*g.scale,87,150);
-    const batterX=g.cx-20*g.scale;
+    const batterX=g.cx+6*g.scale;
     // Smaller screen Y is up the pitch: Liam stands at the popping crease,
     // ahead of his wicket. Draw the nearer stumps last for correct overlap.
     batter(batterX,g.near-3,bh);
