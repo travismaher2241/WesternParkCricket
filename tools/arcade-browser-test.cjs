@@ -27,6 +27,9 @@ for(let i=0;i<12;i++){
  const side=bag[5-i%6];
  if(i%2===0)await page.keyboard.press(side<0?'ArrowLeft':'ArrowRight');
  else await page.locator(side<0?'#left':'#right').dispatchEvent('pointerdown',{pointerType:'touch'});
+ // The shot resolves when the bat reaches the ball, a beat after the press,
+ // so step through the downswing before reading the result.
+ await step(20);
  assert.equal(await page.locator('#feedback b').innerText(),'SIX!',`delivery ${i+1}`);
  assert.equal(await page.locator('#score').innerText(),`${(i+1)*6}/0`);
  if(i===0){
