@@ -98,31 +98,28 @@
     const launchAngle = baseAngle + timingDrift;
     const launchRad = launchAngle * Math.PI / 180;
 
-    // Power & velocity from timing quality and outcome
-    let speed = 0;
-    if (!result.missed && !result.wicket) {
-      if (result.runs === 6) speed = width * 0.72;
-      else if (result.runs === 4) speed = width * 0.58;
-      else if (result.runs === 2) speed = width * 0.38;
-      else if (result.runs === 1) speed = width * 0.28;
-      else speed = width * 0.18;
-    }
-
-    const vx = Math.sin(launchRad) * speed;
-    const vy = -Math.cos(launchRad) * speed;
-    const maxHeight = result.runs === 6 ? height * 0.65 : result.runs === 4 ? height * 0.12 : height * 0.07;
-    const duration = result.runs >= 4 ? 1.3 : 1.0;
+    // The flight is shaped by the outcome, measured against the real rope:
+    // a single is a push into the ring, a two runs into the gap, a four
+    // beats the field to the boundary along the turf, and only a six leaves
+    // the ground. Anything short of four stays down and pulls up short, so
+    // the shot itself tells the player what it was worth.
+    const dirX = Math.sin(launchRad), dirY = -Math.cos(launchRad);
+    const rope = ropeDistance(boundary(geometry()), s.hitOrigin.x, s.hitOrigin.y, dirX, dirY);
+    const reach = { 0: .26, 1: .46, 2: .74, 4: 1.06, 6: 1.5 }[result.runs];
+    const airborne = result.runs === 6;
+    const dist = rope * (reach === undefined ? .4 : reach);
+    const duration = airborne ? 1.5 : result.runs >= 4 ? 1.35 : result.runs === 2 ? 1.15 : .95;
 
     s.ballFlight = {
       x0: s.hitOrigin.x,
       y0: s.hitOrigin.y,
-      groundY0: s.hitOrigin.groundY,
-      vx,
-      vy,
+      dirX, dirY,
       launchAngle,
-      speed,
-      maxHeight,
-      duration,
+      dist, rope, airborne, duration,
+      // A skidded shot hops a couple of times and dies; a six climbs away.
+      bounces: result.runs >= 4 ? 3 : 2,
+      hop: airborne ? height * .42 : Math.min(30, height * .05) * (result.runs >= 4 ? 1 : .7),
+      speed: dist / duration,
       runs: result.runs
     };
 
@@ -132,7 +129,7 @@
       timing: result.timing || (result.missed ? 'MISSED' : 'TIMED'),
       contactPoint: { x: Math.round(s.hitOrigin.x), y: Math.round(s.hitOrigin.y) },
       launchAngle: (launchAngle >= 0 ? '+' : '') + launchAngle.toFixed(1) + '°',
-      launchVelocity: Math.round(speed) + ' px/s',
+      launchVelocity: Math.round(s.ballFlight.speed) + ' px/s',
       runs: result.runs,
       wicket: result.wicket
     };
@@ -257,13 +254,28 @@
   }
   // A white post-and-rail fence just inside the perimeter path, the way the
   // ring of posts reads from above.
-  function fence(g,horizon) {
-    const top=horizon+16,bottom=height*1.13,cy=(top+bottom)/2,rx=width*.61,ry=(bottom-top)/2;
-    ctx.strokeStyle='#cbcabc';ctx.lineWidth=9;ctx.beginPath();ctx.ellipse(g.cx,cy,rx+14,ry+12,0,0,Math.PI*2);ctx.stroke();
-    ctx.strokeStyle='#f4efdd';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(g.cx,cy,rx,ry,0,0,Math.PI*2);ctx.stroke();
-    for(let i=0;i<=64;i++){const a=Math.PI+Math.PI*i/64,x=g.cx+Math.cos(a)*rx,y=cy+Math.sin(a)*ry;
+  // The rope as an ellipse. The ball's flight is measured against the same
+  // numbers the fence is drawn from, so a four reaches the boundary the
+  // player can see rather than an invented one.
+  function boundary(g) {
+    const horizon=height*(height<500?.38:.31),top=horizon+16,bottom=height*1.13;
+    return {cx:g.cx,cy:(top+bottom)/2,rx:width*.61,ry:(bottom-top)/2,top};
+  }
+  // How far a shot leaving (x,y) along (dx,dy) travels before it crosses the
+  // rope, in screen pixels.
+  function ropeDistance(b,x,y,dx,dy) {
+    const px=(x-b.cx)/b.rx,py=(y-b.cy)/b.ry,ux=dx/b.rx,uy=dy/b.ry;
+    const A=ux*ux+uy*uy,B=2*(px*ux+py*uy),C=px*px+py*py-1,disc=B*B-4*A*C;
+    if(A===0||disc<=0)return height*.8;
+    return clamp((-B+Math.sqrt(disc))/(2*A),60,height*1.6);
+  }
+  function fence(g) {
+    const b=boundary(g);
+    ctx.strokeStyle='#cbcabc';ctx.lineWidth=9;ctx.beginPath();ctx.ellipse(b.cx,b.cy,b.rx+14,b.ry+12,0,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='#f4efdd';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(b.cx,b.cy,b.rx,b.ry,0,0,Math.PI*2);ctx.stroke();
+    for(let i=0;i<=64;i++){const a=Math.PI+Math.PI*i/64,x=b.cx+Math.cos(a)*b.rx,y=b.cy+Math.sin(a)*b.ry;
       if(y>height)continue;
-      const h=mix(6,17,clamp((y-top)/(height*.62-top),0,1));line(x,y-h*.35,x,y+h*.65,'#f7f2e2',2.4);}
+      const h=mix(6,17,clamp((y-b.top)/(height*.62-b.top),0,1));line(x,y-h*.35,x,y+h*.65,'#f7f2e2',2.4);}
   }
   function ground(g) {
     const horizon=height*(height<500?.38:.31);
@@ -280,7 +292,7 @@
     text('WESTERN PARK OVAL',boardX,by-bh*.68,7*k,'#c7d9b8');text(`${s.runs} / ${s.wickets}`,boardX,by-bh*.2,16*k,'#ffdf77');
     line(boardX-bw*.37,by-2,boardX-bw*.37,by+12*k,'#506751',4*k);line(boardX+bw*.37,by-2,boardX+bw*.37,by+12*k,'#506751',4*k);
     [width*.26,width*.945].forEach(x=>{line(x,horizon+8,x,horizon-99*k,'#b7c4bc',3);ctx.fillStyle='#dee3d6';ctx.fillRect(x-17*k,horizon-104*k,34*k,11*k);});
-    fence(g,horizon);
+    fence(g);
     // A couple of families watching from the grass outside the fence, over by
     // the clubrooms where everyone actually stands.
     for(let i=0;i<7;i++){const x=width*(i<4?.10+i*.055:.62+(i-4)*.06),y=horizon+14+(i%3)*4;
@@ -557,9 +569,20 @@
   function draw() {
     ctx.clearRect(0,0,width,height);const g=geometry();ground(g);
     // Fielders stay in the shot; runs are resolved quickly for arcade pacing.
-    [[.14,.53],[.29,.43],[.74,.44],[.89,.56],[.08,.76],[.93,.77]].forEach(([x,y],i)=>{
+    const spots=[[.14,.53],[.29,.43],[.74,.44],[.89,.56],[.08,.76],[.93,.77]];
+    // When the ball pulls up inside the ring, the nearest fielder runs it
+    // down, so it is clear why it stopped there rather than reaching the rope.
+    let chase=-1,rest=null;
+    if(s.phase==='result'&&s.ballFlight&&!s.result.wicket&&!s.result.missed&&s.result.runs<4){
+      const bf=s.ballFlight;
+      rest={x:bf.x0+bf.dirX*bf.dist,y:bf.y0+bf.dirY*bf.dist};
+      let best=Infinity;
+      spots.forEach(([x,y],i)=>{const d=Math.hypot(width*x-rest.x,height*y-rest.y);if(d<best){best=d;chase=i;}});
+    }
+    spots.forEach(([x,y],i)=>{
       let px=width*x,py=height*y;
-      if(s.phase==='result'&&s.result.runs>0&&Math.sign(px-g.cx)===s.side){px+=s.side*Math.min(s.time,1)*32;py+=Math.sin(i)*s.time*8;}
+      if(i===chase){const u=clamp((s.time-.2)/.95,0,1);px=mix(px,rest.x,u);py=mix(py,rest.y+7*g.scale,u);}
+      else if(s.phase==='result'&&s.result.runs>0&&Math.sign(px-g.cx)===s.side){px+=s.side*Math.min(s.time,1)*32;py+=Math.sin(i)*s.time*8;}
       person(px,py,48*g.scale,'fielder',s.phase==='result'?s.time*12:0);
     });
     // The bowler's-end umpire looks straight down the pitch from behind the wicket.
@@ -579,14 +602,23 @@
       if(s.practice){const t=clamp(s.time/s.flight,0,1);ctx.globalAlpha=.8;line(g.cx-45,g.near+40,g.cx+45,g.near+40,'#173b38',5);line(g.cx-45,g.near+40,g.cx-45+90*t,g.near+40,'#ffdc6d',5);ctx.globalAlpha=1;}
     }
     if(s.phase==='result'&&!s.result.wicket&&!s.result.missed&&s.ballFlight){
-      const bf=s.ballFlight;
-      const t=clamp(s.time/bf.duration,0,1);
-      const x=bf.x0+bf.vx*t;
-      const y=bf.y0+bf.vy*t-Math.sin(t*Math.PI)*bf.maxHeight;
-      const groundY=bf.groundY0+bf.vy*t*0.35;
-      if(t<1){
-        line(x-bf.vx*.04,y-bf.vy*.04,x,y,'#fff7d59c',3);
-        drawBall(x,y,mix(7,3.2,t),groundY);
+      const bf=s.ballFlight,t=clamp(s.time/bf.duration,0,1);
+      // A ball hit along the turf loses pace to the outfield and pulls up;
+      // a six holds its speed until it is out of the ground.
+      const travel=bf.airborne?t:1-(1-t)*(1-t);
+      const gx=bf.x0+bf.dirX*bf.dist*travel,gy=bf.y0+bf.dirY*bf.dist*travel;
+      // Height off the turf: decaying hops for a skidded shot, one long
+      // climb for a six.
+      // A six climbs steadily rather than leaping, so the player watches it
+      // clear the rope instead of losing it in the first few frames.
+      const hop=bf.airborne?Math.sin(t*.9*Math.PI)*bf.hop
+        :Math.abs(Math.sin(t*Math.PI*bf.bounces))*bf.hop*Math.pow(1-t,1.6);
+      const r=Math.max(2.4,7*clamp(1-travel*(bf.airborne?.7:.5),.3,1));
+      // A grounded ball stays where it stopped; a six is followed until it
+      // leaves the top of the frame, and its shadow goes with it.
+      if((t<1||!bf.airborne)&&gy-hop>-r){
+        if(hop>2)line(gx-bf.dirX*9,gy-bf.dirY*9-hop*.85,gx,gy-hop,'#fff7d59c',2.4);
+        drawBall(gx,gy-hop,r,gy);
       }
     }
     if(s.phase==='result'&&s.result.runs>=4){
