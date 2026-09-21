@@ -27,6 +27,8 @@ Original illustrated right-handed batting sprites over a procedural canvas groun
 
 The batsman uses eight authored poses in `assets/liam-batting-right.png`: stance, backlift, and distinct contact/follow-through pairs. Images are never mirrored. The right-handed stance and helmet stay consistent for both shot directions. Input, timing and scoring remain separate from the artwork.
 
+The atlas's own leg-side pair is not used. Frame 4 turns his head round to square leg before the ball is hit, and frame 5 is a front-foot drive finish. The leg-side pull is built at load time instead, in `buildLegSide()` in `src/arcade.js`: frame 4's opened-up body and bat (the hips and shoulders do open on a pull) wearing frame 6's head, which is still watching the ball, then the same body with the bat wrapped up round the left shoulder for the follow-through. It only draws between canvases, so it works when `index.html` is opened directly. Two authored leg-side frames would be better, and would replace this with no other code changes.
+
 `src/arcade-rules.js` contains the pure timing and innings rules. `src/arcade.js` contains input, match state, animation, artwork and local score storage. `arcade.css` handles desktop and mobile layouts.
 
 ## Checks
