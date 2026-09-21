@@ -6,8 +6,12 @@
    the practice nets are all here as grey-box landmarks, positioned on the
    landmark map so painted artwork can replace each one in place.
 
-   Everything in this file is placeholder geometry awaiting the reference
-   photographs listed in docs/REFERENCE-SHOTLIST.md. */
+   The landmark map now follows the user's aerial photographs of Western Park
+   Reserve: clubrooms and water tank on the western side, the indoor centre
+   away to the north-east, trees heaviest to the east and south. Distances
+   between them are still estimates read off the aerial, not survey figures,
+   and the shapes remain grey boxes awaiting the photographs listed in
+   docs/REFERENCE-SHOTLIST.md. */
 (function (CG) {
   'use strict';
 
@@ -20,9 +24,11 @@
     fenceRX: 58,
     fenceRY: 74,
     goals: [74, -74],
-    lights: [[-50, 54], [50, 54], [-50, -54], [50, -54]],
-    pavilion: { x: -62, y: 4, w: 30, d: 9, h: 6.5 },
-    scoreboard: { x: 44, y: -42, w: 9.5, h: 5.5, legs: 3.2 },
+    lights: [[-64, 58], [64, 58], [-64, -58], [64, -58]],
+    pavilion: { x: -64, y: 14, w: 30, d: 9, h: 6.5 },
+    tank: { x: -76, y: 38, w: 7, d: 7, h: 7.5 },
+    indoor: { x: 76, y: 54, w: 20, d: 34, h: 9.5 },
+    scoreboard: { x: 26, y: 84, w: 9.5, h: 5.5, legs: 3.2 },
     nets: { x: 56, y: 26, len: 18, h: 3.4 }
   };
   CG.OVAL = OVAL;
@@ -250,6 +256,15 @@
     }
   }
 
+  // The indoor centre beyond the north-eastern fence and the clubrooms' water
+  // tank on the north-western corner: the two landmarks that place the ground
+  // at a glance from the middle.
+  function drawOutbuildings(ctx, cam) {
+    var ic = OVAL.indoor, tk = OVAL.tank;
+    box(ctx, cam, ic.x, ic.y, ic.w, ic.d, ic.h, 0, '#dfe3e2', '#c4cbcc');
+    box(ctx, cam, tk.x, tk.y, tk.w, tk.d, tk.h, 0, '#d4d0ba', '#e6e2cf');
+  }
+
   function drawNets(ctx, cam) {
     var n = OVAL.nets;
     var b = cam.project(n.x, n.y, 0);
@@ -408,6 +423,7 @@
     drawTrees(ctx, cam);
     OVAL.lights.forEach(function (l) { drawLightTower(ctx, cam, l[0], l[1]); });
     drawPavilion(ctx, cam);
+    drawOutbuildings(ctx, cam);
     drawScoreboard(ctx, cam, opts.scoreboard);
     drawNets(ctx, cam);
     OVAL.goals.forEach(function (gy) { drawGoalPosts(ctx, cam, gy); });
@@ -469,6 +485,12 @@
     var sb = td.project(OVAL.scoreboard.x, OVAL.scoreboard.y);
     ctx.fillStyle = '#20262f';
     ctx.fillRect(sb.sx - 4, sb.sy - 9, 8, 18);
+    var ic = td.project(OVAL.indoor.x, OVAL.indoor.y);
+    ctx.fillStyle = 'rgba(223,227,226,0.9)';
+    ctx.fillRect(ic.sx - OVAL.indoor.w * td.mpp / 2, ic.sy - OVAL.indoor.d * td.mpp / 2,
+      OVAL.indoor.w * td.mpp, OVAL.indoor.d * td.mpp);
+    var tk = td.project(OVAL.tank.x, OVAL.tank.y);
+    ctx.beginPath(); ctx.arc(tk.sx, tk.sy, Math.max(3, OVAL.tank.w * td.mpp / 2), 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = 'rgba(255,248,210,0.85)';
     OVAL.lights.forEach(function (l) {
       var p = td.project(l[0], l[1]);

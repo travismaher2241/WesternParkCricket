@@ -22,9 +22,16 @@ worth asking rather than a decision that has been taken.
 - **Ground dimensions.** The junior boundary is 41 m square and 47 m straight,
   inside a football oval of 58 m by 74 m. Invented. `C.BOUNDARY_RX` /
   `C.BOUNDARY_RY` and `OVAL` in `src/render/scene.js`.
-- **Landmark positions.** Where the pavilion, scoreboard, nets and light
-  towers sit relative to the pitch is invented, and so is the pitch's compass
-  orientation. The panorama photos settle all of it.
+- **Landmark positions.** The aerial photographs of Western Park Reserve now
+  set the layout: clubrooms and water tank on the western side, the indoor
+  centre beyond the north-eastern fence, a gum line and the estate's roofs
+  along the north, trees heaviest east and south, and a white post fence
+  right around the ring. Both views are drawn from the southern end looking
+  north. Still estimated: the distances between those landmarks, the
+  scoreboard's exact position (a structure is visible on the northern side,
+  but not identifiable), and whether the practice nets are where `OVAL.nets`
+  puts them. `ground()` in `src/arcade.js` and `OVAL` in
+  `src/render/scene.js`.
 - **Junior bowling pace.** 74–86 km/h for a stock ball, 56–63 for a slower
   ball. `CG.DELIVERIES`, `src/core/config.js`.
 - **Evening light.** The club says juniors play Monday, Wednesday and Friday

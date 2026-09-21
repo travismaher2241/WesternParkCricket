@@ -138,28 +138,84 @@
     const narrow=width<650,short=height<500;
     return {cx:width/2,far:height*(short?.46:.40),near:height*(short?.72:narrow?.77:.81),scale:Math.min(Math.max(width/1050,.68),height/680),spread:Math.min(width*.20,180)};
   }
+  // Western Park Reserve, Warragul, from the southern end of the oval. The
+  // aerial references set the layout: the clubrooms and their water tank on
+  // the western side, the long pale indoor centre away to the north-east, a
+  // gum line along the northern boundary with the estate's roofs behind it,
+  // and a white post fence right around the ring. Distances are compressed
+  // for a phone screen, so this is the ground's furniture in the right
+  // places, not a surveyed recreation.
+  function skyline(horizon) {
+    const sky=ctx.createLinearGradient(0,80,0,horizon);sky.addColorStop(0,'#8ac7de');sky.addColorStop(1,'#e2eddd');ctx.fillStyle=sky;ctx.fillRect(0,0,width,height);
+    for(let i=0;i<5;i++){const x=(i*.26+.06)*width;ellipse(x,horizon*.62,48,12,'#edf5ed90');ellipse(x+20,horizon*.59,34,17,'#edf5ed90');}
+    // Light industrial roofs and the road that run behind the northern trees.
+    for(let i=0;i<8;i++){const w=width*(.06+(i%3)*.025),x=width*.02+i*width*.125,h=15+(i%3)*7;
+      ctx.fillStyle=i%2?'#c3cbc8':'#b4bebd';ctx.fillRect(x,horizon-21-h,w,h);
+      poly([[x-4,horizon-21-h],[x+w/2,horizon-28-h],[x+w+4,horizon-21-h]],'#9daaa8');}
+    ctx.fillStyle='#9ba5a4';ctx.fillRect(0,horizon-23,width,8);
+    // Two ranks of gums: a dark wall behind, lighter crowns in front of it.
+    for(let i=0;i<26;i++){const x=i*width/25+(i%2?9:-9),h=30+(Math.sin(i*13)+1)*12;ellipse(x,horizon-h,17+(i%3)*6,h*.55,'#2f5544');}
+    for(let i=0;i<20;i++){const x=i*width/19,h=20+(Math.sin(i*7)+1)*10;
+      ctx.fillStyle='#4c6b52';ctx.fillRect(x-2.5,horizon-h+3,5,h);ellipse(x,horizon-h,14+(i%3)*5,h*.62,i%2?'#3d6f50':'#4a7d59');}
+  }
+  // Western side: the social room under its red gable, the long open shelter
+  // beside it, the round water tank on the corner and the car park kerbside.
+  // Cars are laid down before the buildings so the fascia never sits on them.
+  function clubrooms(horizon,k) {
+    const base=horizon-2,w=Math.min(160,width*.20),x=width*.03;
+    for(let i=0;i<5;i++){const c=x+4+i*22*k;ctx.fillStyle=['#b9483c','#cfd3cf','#3c5d86','#d8c96a','#8d949a'][i];
+      ctx.fillRect(c,base-7*k,17*k,8*k);ctx.fillStyle='#ffffff33';ctx.fillRect(c+4*k,base-11*k,9*k,5*k);}
+    ctx.fillStyle='#d9d5bd';ctx.fillRect(x-8*k,base-48*k,32*k,34*k);ellipse(x+8*k,base-48*k,16*k,7*k,'#eae6d2');
+    ctx.fillStyle='#e4e2d6';ctx.fillRect(x+28*k,base-27*k,w*.55,25*k);
+    poly([[x+24*k,base-27*k],[x+32*k+w*.55,base-27*k],[x+28*k+w*.55,base-35*k],[x+32*k,base-37*k]],'#c9cec9');
+    const cx=x+28*k+w*.5;
+    ctx.fillStyle='#efe9d6';ctx.fillRect(cx,base-39*k,w*.62,37*k);
+    poly([[cx-9*k,base-39*k],[cx+w*.31,base-57*k],[cx+w*.62+9*k,base-39*k]],'#9c4436');
+    for(let i=0;i<4;i++){ctx.fillStyle='#63808a';ctx.fillRect(cx+7*k+i*w*.145,base-31*k,w*.09,17*k);}
+    ctx.fillStyle='#244d6d';ctx.fillRect(cx,base-10*k,w*.62,11*k);
+    if(w>110)text('WESTERN PARK',cx+w*.31,base-2*k,7,'#edf4ed');
+  }
+  // North-east: the big pale indoor centre standing clear of the treeline.
+  function indoorCentre(horizon,k) {
+    const w=Math.min(290,width*.29),x=width*.70,base=horizon-2;
+    ctx.fillStyle='#e8ebe9';ctx.fillRect(x,base-33*k,w,31*k);
+    poly([[x-9*k,base-33*k],[x+w*.42,base-48*k],[x+w+9*k,base-33*k]],'#d3d9da');
+    for(let i=1;i<6;i++)line(x+i*w/6,base-31*k,x+i*w/6,base-3,'#d7dcda',2);
+    ctx.fillStyle='#c3cac9';ctx.fillRect(x+w*.60,base-19*k,w*.2,17*k);
+  }
+  // A white post-and-rail fence just inside the perimeter path, the way the
+  // ring of posts reads from above.
+  function fence(g,horizon) {
+    const top=horizon+16,bottom=height*1.13,cy=(top+bottom)/2,rx=width*.61,ry=(bottom-top)/2;
+    ctx.strokeStyle='#cbcabc';ctx.lineWidth=9;ctx.beginPath();ctx.ellipse(g.cx,cy,rx+14,ry+12,0,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='#f4efdd';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(g.cx,cy,rx,ry,0,0,Math.PI*2);ctx.stroke();
+    for(let i=0;i<=64;i++){const a=Math.PI+Math.PI*i/64,x=g.cx+Math.cos(a)*rx,y=cy+Math.sin(a)*ry;
+      if(y>height)continue;
+      const h=mix(6,17,clamp((y-top)/(height*.62-top),0,1));line(x,y-h*.35,x,y+h*.65,'#f7f2e2',2.4);}
+  }
   function ground(g) {
     const horizon=height*(height<500?.38:.31);
-    const sky=ctx.createLinearGradient(0,80,0,horizon);sky.addColorStop(0,'#8ac7de');sky.addColorStop(1,'#e2eddd');ctx.fillStyle=sky;ctx.fillRect(0,0,width,height);
-    // Soft clouds and rolling Gippsland hills.
-    for(let i=0;i<5;i++){const x=(i*.26+.06)*width;ellipse(x,horizon*.62,48,12,'#edf5ed90');ellipse(x+20,horizon*.59,34,17,'#edf5ed90');}
-    poly([[0,horizon],[0,horizon-23],[width*.18,horizon-51],[width*.4,horizon-18],[width*.65,horizon-44],[width,horizon-14],[width,horizon]],'#7caba1');
-    for(let i=0;i<36;i++){const x=i*width/35;const h=16+(Math.sin(i*17)+1)*13;ctx.fillStyle='#537c64';ctx.fillRect(x-2,horizon-h,4,h);ellipse(x,horizon-h,12+(i%3)*4,h*.7,i%2?'#547c63':'#628a6b');}
+    // One scale for the ground's furniture, so a phone gets the same layout
+    // rather than a few landmarks sized for a desktop.
+    const k=clamp(width/1050,.62,1.1);
+    skyline(horizon);
     ctx.fillStyle='#6baa60';ctx.fillRect(0,horizon,width,height-horizon);
     for(let i=0;i<9;i++){const y=horizon+(height-horizon)*(i/9)**1.6;const y2=horizon+(height-horizon)*((i+1)/9)**1.6;ctx.fillStyle=i%2?'#6eaf63':'#75b568';ctx.fillRect(0,y,width,y2-y);}
-    // Local pavilion, boundary boards and lights are stylised, not a surveyed recreation.
-    const bx=width*.12,by=horizon-10,bw=Math.min(190,width*.21);
-    ctx.fillStyle='#e5dfc9';ctx.fillRect(bx,by-40,bw,43);poly([[bx-10,by-40],[bx+bw*.4,by-63],[bx+bw+10,by-40]],'#35596a');
-    for(let i=0;i<5;i++){ctx.fillStyle='#536f78';ctx.fillRect(bx+10+i*bw/5,by-29,bw/8,23);}
-    ctx.fillStyle='#244d6d';ctx.fillRect(bx-4,by-3,bw+8,14);text('WESTERN PARK',bx+bw/2,by+7,8,'#edf4ed');
-    const boardX=width*.80;ctx.fillStyle='#193c45';ctx.fillRect(boardX-52,by-47,104,47);text('FINDEX OVAL',boardX,by-34,9,'#c7d9b8');text(`${s.runs} / ${s.wickets}`,boardX,by-11,18,'#ffdf77');line(boardX-40,by,boardX-40,by+15,'#506751',4);line(boardX+40,by,boardX+40,by+15,'#506751',4);
-    [width*.06,width*.94].forEach(x=>{line(x,horizon+8,x,horizon-99,'#b7c4bc',3);ctx.fillStyle='#dee3d6';ctx.fillRect(x-17,horizon-104,34,11);});
-    // Boundary rope and a few parents on the grass.
-    const ropeTop=horizon+16,ropeBottom=height*1.13;
-    ctx.strokeStyle='#f1ead6';ctx.lineWidth=3;ctx.beginPath();
-    ctx.ellipse(g.cx,(ropeTop+ropeBottom)/2,width*.61,(ropeBottom-ropeTop)/2,0,0,Math.PI*2);ctx.stroke();
-    for(let i=0;i<16;i++){const x=width*(.02+i*.064),y=horizon+12+(i%3)*4;ellipse(x,y-9,3,3,'#dbaf89');line(x,y-5,x,y+3,i%2?'#274c75':'#ddcbb1',5);}
-    // Pitch with a broad, readable near crease.
+    clubrooms(horizon,k);indoorCentre(horizon,k);
+    // Scoreboard on its legs beyond the northern boundary.
+    const boardX=width*.585,by=horizon-2,bw=92*k,bh=42*k;
+    ctx.fillStyle='#193c45';ctx.fillRect(boardX-bw/2,by-bh-2,bw,bh);
+    text('FINDEX OVAL',boardX,by-bh*.68,8*k,'#c7d9b8');text(`${s.runs} / ${s.wickets}`,boardX,by-bh*.2,16*k,'#ffdf77');
+    line(boardX-bw*.37,by-2,boardX-bw*.37,by+12*k,'#506751',4*k);line(boardX+bw*.37,by-2,boardX+bw*.37,by+12*k,'#506751',4*k);
+    [width*.26,width*.945].forEach(x=>{line(x,horizon+8,x,horizon-99*k,'#b7c4bc',3);ctx.fillStyle='#dee3d6';ctx.fillRect(x-17*k,horizon-104*k,34*k,11*k);});
+    fence(g,horizon);
+    // A couple of families watching from the grass outside the fence, over by
+    // the clubrooms where everyone actually stands.
+    for(let i=0;i<7;i++){const x=width*(i<4?.10+i*.055:.62+(i-4)*.06),y=horizon+14+(i%3)*4;
+      ellipse(x,y-9*k,3*k,3*k,'#dbaf89');line(x,y-5*k,x,y+3*k,i%2?'#274c75':'#ddcbb1',5*k);}
+    // The centre block: a straw prepared square with the playing strip down
+    // the middle of it, which is how the square reads from the air.
+    poly([[g.cx-27,g.far-17],[g.cx+27,g.far-17],[g.cx+g.spread*.90,g.near+36],[g.cx-g.spread*.90,g.near+36]],'#c6b583');
     poly([[g.cx-22,g.far-12],[g.cx+22,g.far-12],[g.cx+g.spread*.73,g.near+25],[g.cx-g.spread*.73,g.near+25]],'#d8c28a');
     poly([[g.cx-13,g.far],[g.cx+15,g.far],[g.cx+g.spread*.50,g.near+25],[g.cx-g.spread*.48,g.near+25]],'#dfca94');
     for(let i=0;i<48;i++){const t=(i*.618)%1,x=g.cx+Math.sin(i*14)*mix(12,g.spread*.56,t);line(x,mix(g.far,g.near,t),x+2,mix(g.far,g.near,t)+1,'#b69f6a55',1);}

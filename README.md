@@ -22,7 +22,7 @@ The challenge is 12 balls with three wickets. Good timing scores runs; sweet tim
 
 ## Design
 
-Original procedural canvas artwork, fixed front-on camera, automatic shot choice and footwork, visible ball bounce, simple timing feedback, boundary celebrations and synthesised sound. No external assets, dependencies or build step are required to play. The venue and character are stylised Western Park/Liam representations; precise likeness, kit and ground layout still need the user's references.
+Original procedural canvas artwork, fixed front-on camera, automatic shot choice and footwork, visible ball bounce, simple timing feedback, boundary celebrations and synthesised sound. No external assets, dependencies or build step are required to play. The ground follows the user's aerial photographs of Western Park Reserve — clubrooms and water tank west, indoor centre north-east, gum line and estate roofs north, white post fence around the ring — with the distances between them compressed for a phone screen. The character is still a stylised Liam; precise likeness and kit need the user's references.
 
 `src/arcade-rules.js` contains the pure timing and innings rules. `src/arcade.js` contains input, match state, animation, artwork and local score storage. `arcade.css` handles desktop and mobile layouts.
 
