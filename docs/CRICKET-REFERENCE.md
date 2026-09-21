@@ -18,4 +18,11 @@ A missed ball outside the wicket is a dot; only the straight deliveries can bowl
 
 ## Intentional arcade simplifications
 
-This remains a two-button batting challenge, not a full cricket simulation. Timing sets scoring outcomes, running is automatic, Liam stays on strike, there are three wickets, and real-world metre measurements are compressed for visibility. Character likeness and the exact Findex Oval layout still need photo references. Gameplay checks are not evidence of coaching-grade biomechanics.
+This remains a three-direction batting challenge, not a full cricket simulation. Timing sets scoring outcomes, running is automatic, Liam stays on strike, there are three wickets, and real-world metre measurements are compressed for visibility. Character likeness and the exact Findex Oval layout still need photo references. Gameplay checks are not evidence of coaching-grade biomechanics.
+
+
+## Sprite replacement on 21 September 2026
+
+Reviewed the original Stick Cricket screenshot published by Stick Sports in its developer blog: https://medium.com/stick-sports/developers-blog-stick-cricket-df6926f84e05 . Reference only; its artwork is not bundled into this game.
+
+Replaced the mirrored procedural figure with an original illustrated eight-pose right-handed sprite atlas. In the behind-striker view, left controls the leg side and right controls the off side, matching the classic screenshot controls. No pose uses horizontal mirroring or a rotated profile helmet. Assets are stored locally with transparent backgrounds. The character is stylised, not a photographic likeness of Liam.

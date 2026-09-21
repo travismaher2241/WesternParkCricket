@@ -126,7 +126,7 @@
 
     s.lastDebug = {
       shot: s.stroke ? s.stroke.toUpperCase() : 'STRAIGHT',
-      sideName: s.side < 0 ? 'LEFT (OFF-SIDE)' : s.side > 0 ? 'RIGHT (ON-SIDE)' : 'STRAIGHT (DOWN GROUND)',
+      sideName: s.side < 0 ? 'LEFT (LEG SIDE)' : s.side > 0 ? 'RIGHT (OFF SIDE)' : 'STRAIGHT (DOWN GROUND)',
       timing: result.timing || (result.missed ? 'MISSED' : 'TIMED'),
       contactPoint: { x: Math.round(s.hitOrigin.x), y: Math.round(s.hitOrigin.y) },
       launchAngle: (launchAngle >= 0 ? '+' : '') + launchAngle.toFixed(1) + '°',
@@ -261,9 +261,9 @@
   const SLUMP     = pose(  26, 12, -34, 10,  0,  8,   0, 0);
 
   // Authentic Cricket Stroke Families:
-  // LEFT: Off-side Cover Drive (classical high-elbow drive through cover) / Square Cut (on shorter deliveries)
+  // LEFT: right-handed leg glance / pull.
   // STRAIGHT: Pure Straight Drive (clean vertical blade driving down the pitch past the bowler)
-  // RIGHT: On-Drive / Leg-Side Flick (wrists rolling through mid-wicket) / Pull (on shorter deliveries)
+  // RIGHT: right-handed cover drive / cut.
   const STROKES = {
     coverDrive: { contact: pose( 22, 20, -46, 6, 11,  5,  2, 2),
                   extend:  pose( 60, 21, -52, 7, 11,  4,  5, 3),
@@ -282,8 +282,8 @@
                   finish:  pose(-145, 2, -58, 4, -2, -1, 24, 8) }
   };
   // Aliases for compatibility
-  STROKES.left = STROKES.coverDrive;
-  STROKES.right = STROKES.flick;
+  STROKES.left = STROKES.flick;
+  STROKES.right = STROKES.coverDrive;
   STROKES.drive = STROKES.coverDrive;
 
   // Press to contact. A perfectly timed press puts the bat on the ball at the
@@ -321,8 +321,8 @@
   function pickStroke(side){
     const shortBall = s.bounce < .62;
     if (side === 0) return 'straight';
-    if (side < 0) return shortBall ? 'cut' : 'coverDrive';
-    return shortBall ? 'pull' : 'flick';
+    if (side < 0) return shortBall ? 'pull' : 'flick';
+    return shortBall ? 'cut' : 'coverDrive';
   }
 
   /* The swing itself. Accelerating down into the ball, a short drive through
@@ -354,199 +354,37 @@
     return lerpPose(k.finish, settle, easeInOut(clamp((t-SWING.finish)/(SWING.rest-SWING.finish),0,1)));
   }
 
-  // An authentic side-on cricket batsman holding the bat with normal hands.
-  // Profile faces down the pitch with an athletic forward lean over the popping
-  // crease, white batting pads, helmet peak focused on the bowler, and gloved
-  // hands gripping the handle.
+  // Authored right-handed sprites. NEVER mirror this atlas: both shot sides
+  // have their own poses so handedness, helmet and grip remain consistent.
+  const battingSheet = new Image();
+  let battingReady = false;
+  ['play','practice'].forEach(id => $(id).disabled = true);
+  battingSheet.onload = () => {
+    battingReady = true;
+    ['play','practice'].forEach(id => $(id).disabled = false);
+  };
+  battingSheet.onerror = () => {
+    document.querySelector('.menu-note').textContent = 'Batting artwork could not load. Please refresh the game.';
+  };
+  battingSheet.src = 'assets/liam-batting-right.png';
+  function battingFrame() {
+    if (!s.swinging) return s.phase === 'delivery' && liftAt(s.time) > .35 ? 1 : 0;
+    const t = s.swing;
+    if (t < SWING.contact-.035) return 1;
+    const contact = s.side < 0 ? 4 : s.side > 0 ? 2 : 6;
+    if (t < SWING.extend+.035) return contact;
+    if (t < SWING.rest) return contact+1;
+    return 0;
+  }
   function batter(x,y,h) {
-    ctx.save();ctx.translate(x,y);ctx.scale(-h/100,h/100);
-
-    const isDelivery = s.phase==='delivery';
-    const isResult = s.phase==='result';
-    const swingT = s.swinging ? s.swing : -1;
-
-    let p;
-    if (s.swinging) p = swingPose(swingT);
-    else if (isDelivery) p = backliftPose(s.time);
-    else if (isResult && s.result && s.result.wicket) p = lerpPose(STANCE,SLUMP,smooth(clamp(s.time/.5,0,1)));
-    else if (s.phase==='runup' && s.resetFrom) p = lerpPose(s.resetFrom,STANCE,smooth(clamp(s.time/.42,0,1)));
-    else { p = lerpPose(STANCE,STANCE,0); p.hy += Math.sin(s.time*7)>.25 ? -2.5 : 0; }
-
-    const lookBack = isResult && s.result && s.result.wicket && s.time > .28;
-    const bodyTilt = p.tilt, frontStep = p.step, headDrop = p.head, hipTurn = p.hip, heel = p.heel;
-
-    const ang = p.ang*Math.PI/180;
-    const ux = Math.sin(ang), uy = Math.cos(ang);
-    const nx = -uy, ny = ux;
-    const grip = {x:p.hx, y:p.hy};
-    const toe = {x:p.hx+ux*BAT_LEN, y:p.hy+uy*BAT_LEN};
-
-    // Shadow on turf
-    ellipse(-2+frontStep*.45,3,21,5.6,'#28533340');
-    if(toe.y>-4)ellipse(toe.x,toe.y+1,7,2.5,'#28533330');
-
-    const inContact = s.swinging && swingT >= SWING.contact-.01 && swingT <= SWING.extend+.04;
-    const batBehind = !inContact && uy < .12;
-    if (batBehind) paintBat();
-
-    // Joint anchors
-    const shoulderLift = headDrop*.4;
-    const sxFar=9+bodyTilt+hipTurn*.30, syFar=-74+shoulderLift;
-    const sxNear=3+bodyTilt+hipTurn*.30, syNear=-73+shoulderLift;
-    const topGrip={x:grip.x-ux*6,y:grip.y-uy*6};
-    const botGrip={x:grip.x,y:grip.y};
-    const farElbow={x:mix(sxFar,topGrip.x,.45)+6,y:mix(syFar,topGrip.y,.5)+3};
-    const nearElbow={x:mix(sxNear,botGrip.x,.45)+4,y:mix(syNear,botGrip.y,.5)+4};
-
-    // 1. Far (Front) Leg. Side on, this leg is directly behind the back one,
-    //    so in the stance it is hidden and only a sliver of it shows. It comes
-    //    out from behind the body when he strides into a shot.
-    const fKneeX=-2+frontStep*.75,fKneeY=-28;
-    const fFootX=-4+frontStep*1.2,fFootY=-1;
-    line(-1+bodyTilt,-47,fKneeX,fKneeY,'#1c5aa8',11);
-    poly([[fKneeX-4,fKneeY-5],[fKneeX+5,fKneeY-3],[fFootX+5,fFootY-3],[fFootX-4,fFootY-3]],'#f4f5ee','#b8beaf',1.2);
-    line(fKneeX-3,fKneeY,fKneeX+4,fKneeY,'#ccd1c2',2.2);
-    line(fKneeX-3,fKneeY+7,fFootX-3,fFootY-4,'#d8ddd0',1.5);
-    line(fKneeX+1,fKneeY+7,fFootX+1,fFootY-4,'#d8ddd0',1.5);
-    line(fKneeX-4,fKneeY+4,fKneeX-2,fKneeY+4,'#8a948c',2);
-    line(fFootX-4,fFootY-7,fFootX-2,fFootY-7,'#8a948c',2);
-    poly([[fFootX-4,fFootY-2],[fFootX+8,fFootY-2],[fFootX+10,fFootY+1],[fFootX-5,fFootY+1]],'#ffffff','#ccd1c2',1);
-    line(fFootX-5,fFootY+1.5,fFootX+10,fFootY+1.5,'#293f50',2);
-
-    // 2. Near (Back) Leg - the one you actually see. It rocks back and up onto
-    //    the toe for a shot off the back foot.
-    const bKneeX=-5-hipTurn*.10-heel*.55,bKneeY=-27-heel*.45;
-    const bFootX=-6-hipTurn*.06-heel*.85,bFootY=-heel*.55;
-    line(-4+bodyTilt,-47,bKneeX,bKneeY,'#164887',11);
-    poly([[bKneeX-4,bKneeY-5],[bKneeX+4,bKneeY-3],[bFootX+4,bFootY-3],[bFootX-4,bFootY-3]],'#ecefe5','#b2b8a8',1.2);
-    line(bKneeX-3,bKneeY,bKneeX+3,bKneeY,'#c4cab9',2);
-    poly([[bFootX-4,bFootY-2],[bFootX+7,bFootY-2],[bFootX+9,bFootY+1],[bFootX-5,bFootY+1]],'#ffffff','#ccd1c2',1);
-    line(bFootX-5,bFootY+1.5,bFootX+9,bFootY+1.5,'#293f50',2);
-
-    // 3. Side-on Torso leaning forward
-    const hx=-3+bodyTilt+hipTurn*.16,hy=-47;
-    poly([[hx-4,hy],[hx+6,hy],[sxFar+3,syFar],[sxNear-3,syNear],[hx-4,hy]],'#1c5fa8','#113c6b',1.2);
-    poly([[hx-4,hy],[hx,hy],[sxNear-1,syNear],[sxNear-3,syNear]],'#13467e');
-    line(hx+1,hy,sxNear+1,syNear,'#ffd25c',2);
-
-    // 4. Head, Neck & Helmet. The bowler is up the pitch, not square, so the
-    //    helmet turns to face him and then follows the ball down as Liam
-    //    plays: the same number that drops his head into the shot swings his
-    //    eyeline from up the pitch to down at the ball and back up after it.
-    const neckX=7+bodyTilt*.6+hipTurn*.18,neckY=-76+headDrop*.4;
-    const headX=(lookBack?3:11)+bodyTilt*.7+hipTurn*.24;
-    const headY=-89+headDrop;
-    const look=lookBack?0:clamp(EYELINE+headDrop*10,-85,22);
-    line(neckX,neckY,headX-1,headY+5,'#e5aa82',6.5);
-
-    ctx.save();
-    ctx.translate(headX,headY);
-    ctx.rotate(look*Math.PI/180);
-    ellipse(0,0,11,10.5,'#15447b');
-    ellipse(-2,-3,7,6,'#2261a8');
-    if(!lookBack){
-      poly([[5,-1],[16,-3],[17,1],[8,2]],'#0e325c');
-      poly([[5,1],[9,3],[7,6],[8,9],[2,9]],'#e5aa82');
-      ellipse(6,2,1.2,1.2,'#122338');
-      line(-1,3,7,8,'#b5c4cc',1.6);
-      line(2,1,7,8,'#b5c4cc',1.4);
-      line(4,4,8,7,'#b5c4cc',1.2);
-    }else{
-      poly([[-5,-1],[-15,-2],[-16,2],[-8,3]],'#0e325c');
-      ellipse(-5,3,1.2,1.2,'#122338');
-    }
-    ctx.restore();
-
-    // 5. Far (Front) Arm
-    line(sxFar,syFar,farElbow.x,farElbow.y,'#1c5fa8',7);
-    line(farElbow.x,farElbow.y,farElbow.x+ux*1.5,farElbow.y+uy*1.5,'#ffd25c',7);
-    line(farElbow.x,farElbow.y,topGrip.x,topGrip.y,'#e5aa82',5.5);
-
-    // 6. Cricket Bat
-    if (!batBehind) paintBat();
-
-    // The bat, its blur and the flash of contact, drawn either behind the
-    // body or in front of it depending on where in the arc the blade is.
-    function paintBat(){
-      // Ghosted blades through the fast part of the swing, so the arc reads
-      // at speed instead of strobing between frames.
-      if (s.swinging && swingT > SWING.back*.5 && swingT < SWING.finish) {
-        for (let i=4;i>=1;i--) {
-          const gt = swingT - i*.014;
-          if (gt <= SWING.back*.4) continue;
-          drawBat(swingPose(gt), .26 - i*.05);
-        }
-      }
-      drawBat(p);
-
-      // The ball resists the bat for an instant: a small flash on contact.
-      const struck = (s.pending||s.result||{}).missed === false;
-      if (s.swinging && struck && Math.abs(swingT-SWING.contact) < .055) {
-        const f = 1-Math.abs(swingT-SWING.contact)/.055;
-        ctx.save(); ctx.globalAlpha = f*.5;
-        ellipse(grip.x+ux*BAT_LEN*.74, grip.y+uy*BAT_LEN*.74, 7+(1-f)*12, 7+(1-f)*12, '#fff6d0');
-        ctx.restore();
-      }
-    }
-
-    function drawBat(bp, ghost) {
-      const a=bp.ang*Math.PI/180, bux=Math.sin(a), buy=Math.cos(a);
-      const gx=bp.hx, gy=bp.hy, tx=gx+bux*BAT_LEN, ty=gy+buy*BAT_LEN;
-      const bnx=-buy, bny=bux, full=ghost===undefined;
-      const knobX=gx-bux*13,knobY=gy-buy*13;
-      const spliceX=gx+bux*8,spliceY=gy+buy*8;
-      if(!full){ctx.save();ctx.globalAlpha=ghost;}
-      if(full){
-        line(knobX,knobY,spliceX,spliceY,'#f2efe9',4.2);
-        for(let r=-11;r<=6;r+=2.5){
-          const rx=gx+bux*r,ry=gy+buy*r;
-          line(rx-bnx*1.8,ry-bny*1.8,rx+bnx*1.8,ry+bny*1.8,'#d8d4c7',.8);
-        }
-        ellipse(knobX,knobY,2.4,2,'#e0dcce');
-      }
-      const shoulder1=[spliceX+bnx*3.6,spliceY+bny*3.6];
-      const shoulder2=[spliceX-bnx*3.6,spliceY-bny*3.6];
-      const toe1=[tx+bnx*4.2,ty+bny*4.2];
-      const toe2=[tx-bnx*4.2,ty-bny*4.2];
-      poly([shoulder2,toe2,[tx,ty],[spliceX,spliceY]],'#c8a466');
-      poly([[spliceX,spliceY],shoulder1,toe1,[tx,ty]],'#faeed2',full?'#bfa065':null,1);
-      if(full){
-        line(spliceX,spliceY,tx,ty,'#e5d1a4',1);
-        const sTopX=spliceX+(tx-spliceX)*.15,sTopY=spliceY+(ty-spliceY)*.15;
-        const sBotX=spliceX+(tx-spliceX)*.55,sBotY=spliceY+(ty-spliceY)*.55;
-        line(sTopX,sTopY,sBotX,sBotY,'#d32f2f',3);
-        line(sTopX,sTopY,sTopX+(sBotX-sTopX)*.7,sTopY+(sBotY-sTopY)*.7,'#ffd25c',1.8);
-      }
-      if(!full)ctx.restore();
-    }
-
-    // Batting glove drawer helper
-    function drawGlove(gx,gy){
-      ctx.save();ctx.translate(gx,gy);
-      const a=Math.atan2(uy,ux);ctx.rotate(a);
-      poly([[-4,-3],[-4,3],[-1,3],[-1,-3]],'#1c5fa8');
-      poly([[-1,-4.5],[6,-4.5],[7,4.5],[-1,4.5]],'#f5f7fa','#d0d7de',1);
-      for(let f=0;f<3;f++){
-        const fx=.5+f*2.2;
-        poly([[fx,-4.2],[fx+1.8,-4.2],[fx+1.8,1.2],[fx,1.2]],'#e9ecef','#bec5cb',.8);
-        line(fx+.4,-2.5,fx+1.4,-2.5,'#1c5fa8',1);
-      }
-      poly([[1,2.5],[5,2.5],[4.5,4.8],[.5,4.8]],'#e9ecef','#bec5cb',.8);
-      ctx.restore();
-    }
-
-    // 7. Top Glove (Left Hand)
-    drawGlove(topGrip.x,topGrip.y);
-
-    // 8. Near (Back) Arm
-    line(sxNear,syNear,nearElbow.x,nearElbow.y,'#1c5fa8',7.5);
-    line(nearElbow.x,nearElbow.y,nearElbow.x+ux*1.5,nearElbow.y+uy*1.5,'#ffd25c',7.5);
-    line(nearElbow.x,nearElbow.y,botGrip.x,botGrip.y,'#e5aa82',5.8);
-
-    // 9. Bottom Glove (Right Hand)
-    drawGlove(botGrip.x,botGrip.y);
-
-    ctx.restore();
+    if (!battingReady) return;
+    const frame = battingFrame(), cellW = 384, cellH = 512;
+    const unit = h/410;
+    // The atlas uses the same camera and physical scale in every cell.
+    // Align the grounded back foot; no negative scale or helmet rotations.
+    ellipse(x,y+2,22*unit*3,5*unit*3,'#28533340');
+    ctx.drawImage(battingSheet,(frame%4)*cellW,Math.floor(frame/4)*cellH,
+      cellW,cellH,x-(frame>=6?220:180)*unit,y-470*unit,cellW*unit,cellH*unit);
   }
   function person(x,y,h,role,pose=0) {
     ctx.save();ctx.translate(x,y);ctx.scale(h/100,h/100);
@@ -577,7 +415,12 @@
     let z;
     if(t<s.bounce)z=83.3*g.scale*(1-t/s.bounce);
     else {
-      const u=(t-s.bounce)/(1-s.bounce),rise=Math.pow(1-s.bounce,2)*340*g.scale;
+      const u=(t-s.bounce)/(1-s.bounce);
+      // Match the incoming height to the authored stroke's contact plane:
+      // leg-side pull at waist height, off-side drive and straight at knee height.
+      const unit=clamp(150*g.scale,100,175)/410;
+      const contactY=Math.abs(s.line)<.12 ? 340 : s.line<0 ? 235 : 345;
+      const rise=(3+(470-contactY)*unit)/.624;
       z=rise*(3.225*u-2.601*u*u)*(1-past*.5);
     }
     return {x,y:groundY-z,groundY,r:mix(3,8,clamp(t,0,1))*Math.max(.7,g.scale)};
@@ -600,8 +443,8 @@
     person(g.cx-Math.min(width*.39,360),g.near-3,65*g.scale,'umpire');
     const run=s.phase==='runup'?clamp(s.time/1.05,0,1):1;
     person(g.cx+30*g.scale,g.far-27*(1-run),70*g.scale,'bowler',s.phase==='runup'?s.time*19:0);
-    const bh=clamp(136*g.scale,87,150);
-    const batterX=g.cx+6*g.scale;
+    const bh=clamp(150*g.scale,100,175);
+    const batterX=g.cx-14*g.scale;
     // Smaller screen Y is up the pitch: Liam stands at the popping crease,
     // ahead of his wicket. Draw the nearer stumps last for correct overlap.
     batter(batterX,g.near-3,bh);
@@ -660,6 +503,6 @@
   function frame(now) {const dt=last?Math.min((now-last)/1000,.05):0;last=now;update(dt);draw();requestAnimationFrame(frame);}
   // Development hook. Lets the browser checks drive a delivery and inspect a
   // swing frame by frame instead of waiting on real time.
-  window.BoundaryBashDebug={state:()=>s,geometry,pickStroke,swingPose,backliftPose,shot,SWING,STROKES,ballAtContact,toggleDebug:()=>{s.debug=!s.debug;}};
+  window.BoundaryBashDebug={state:()=>s,geometry,pickStroke,swingPose,backliftPose,shot,SWING,STROKES,ballAtContact,battingFrame,battingReady:()=>battingReady,toggleDebug:()=>{s.debug=!s.debug;}};
   hud();overlay('menu');requestAnimationFrame(frame);
 })();

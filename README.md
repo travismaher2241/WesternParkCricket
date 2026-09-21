@@ -12,8 +12,9 @@ node tools/serve.js 5174
 
 Then visit http://localhost:5174.
 
-- **Left arrow / A:** hit left.
-- **Right arrow / D:** hit right.
+- **Left arrow / A:** hit to the leg side.
+- **Right arrow / D:** hit to the off side.
+- **Up arrow / W:** straight drive.
 - **Touch:** tap the matching shot button.
 - **Escape:** pause or resume. Switching tabs pauses automatically.
 - **Sound button:** toggle sound effects.
@@ -22,9 +23,9 @@ The challenge is 12 balls with three wickets. Good timing scores runs; sweet tim
 
 ## Design
 
-Original procedural canvas artwork, fixed front-on camera, automatic shot choice and footwork, visible ball bounce, simple timing feedback, boundary celebrations and synthesised sound. No external assets, dependencies or build step are required to play. The venue and character are stylised Western Park/Liam representations; precise likeness, kit and ground layout still need the user's references.
+Original illustrated right-handed batting sprites over a procedural canvas ground, fixed front-on camera, automatic shot choice and footwork, visible ball bounce, simple timing feedback, boundary celebrations and synthesised sound. The sprite atlas is bundled locally; no external services, dependencies or build step are required to play. The venue and character are stylised Western Park/Liam representations; precise likeness, kit and ground layout still need the user's references.
 
-The bat is a rigid arm swung on an arc: each pose is a bat angle plus a hand position, so the blade keeps its length and the toe sweeps a real path. Liam plays a pull, flick, cut or drive depending on the length, aimed at where the ball actually arrives, and the shot resolves when the bat reaches the ball rather than the instant the key goes down.
+The batsman uses eight authored poses in `assets/liam-batting-right.png`: stance, backlift, and distinct contact/follow-through pairs. Images are never mirrored. The right-handed stance and helmet stay consistent for both shot directions. Input, timing and scoring remain separate from the artwork.
 
 `src/arcade-rules.js` contains the pure timing and innings rules. `src/arcade.js` contains input, match state, animation, artwork and local score storage. `arcade.css` handles desktop and mobile layouts.
 
@@ -42,14 +43,13 @@ node tools/arcade-browser-test.cjs
 
 It checks a complete innings using keyboard and touch events, score progression, pause, all-out, practice and persistence, and saves screenshots in `artifacts/`.
 
-Two more browser checks cover the batting animation. Both drive the game frame by frame, so they test the swing without trying to catch it in real time.
+The sprite review captures every authored pose in the game camera and checks the left/leg-side and right/off-side mapping:
 
 ```sh
-node tools/arcade-swing-check.cjs
-node tools/arcade-swing-capture.cjs
+node tools/arcade-sprite-check.cjs
 ```
 
-The first sweeps every line, length, side and timing the game can serve and reports how far the blade finishes from the ball at contact, and the largest turn of the bat between two frames. The second writes a contact sheet per stroke to `artifacts/swing-*.png` so the arc, the bat length and the follow-through can be checked by eye.
+The older `arcade-swing-check.cjs` and `arcade-swing-capture.cjs` are retained as development history; their mathematical bat rig is no longer the rendered character.
 
 ## Earlier simulation
 
