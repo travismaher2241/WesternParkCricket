@@ -15,6 +15,7 @@
     else if (error < w * .55) timing = 'GOOD';
     else timing = 'DECENT';
 
+    if (offset > .045) return Object.assign(miss(line, 'Too late'), {timing:'LATE'});
     if (side === 0) {
       if (Math.abs(line) > .55) return Object.assign(miss(line, 'Outside line for straight drive'), { timing });
     } else if (side !== Math.sign(line) && Math.abs(line) >= .12) {

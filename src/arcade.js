@@ -46,7 +46,7 @@
     audio.resume();
     s = {phase:'ready',runs:0,wickets:0,balls:0,history:[],practice,time:0,swing:0,swinging:false,side:0,fours:0,sixes:0,paused:false,debug:s?s.debug:false};
     overlay(null); feedback('READY, LIAM?', 'Watch the ball. Hit Left, Straight, or Right.'); hud();
-    $('instruction').textContent = practice ? 'PRACTICE · HIT AT THE GOLD CREASE' : '12 BALLS · 3 WICKETS · LEFT, STRAIGHT, OR RIGHT';
+    $('instruction').textContent = practice ? 'PRACTICE · HIT AS THE BALL REACHES THE BAT' : '12 BALLS · 3 WICKETS · LEFT, STRAIGHT, OR RIGHT';
   }
   function nextBall() {
     // Ease out of the last shot instead of snapping back to the stance.
@@ -60,17 +60,19 @@
     // Mix attacking straight deliveries with balls outside the wicket.
     s.line=s.bag.pop()*(s.balls%3===2 ? .08+Math.random()*.02 : .72+Math.random()*.28);
     s.flight=rules.levels[difficulty].flight*(.94+Math.random()*.14);
-    s.bounce=.52+Math.random()*.20;
+    // Shorter leg-side balls suit a pull; fuller balls suit the drive.
+    s.bounce=s.line<-.12 ? .56+Math.random()*.04 : .78+Math.random()*.04;
     feedback('', '');
-    $('instruction').textContent = s.practice ? 'WATCH IT BOUNCE. HIT AT THE GOLD LINE.' : 'WATCH THE BALL. TRUST YOUR TIMING.';
+    $('instruction').textContent = s.practice ? 'HIT AS THE BALL REACHES THE BAT.' : 'WATCH THE BALL. TRUST YOUR TIMING.';
   }
   function shot(side) {
     if(s.paused || s.phase!=='delivery' || s.pending) return;
-    s.side=side; s.swing=0; s.swinging=true;
+    s.side=side; s.swing=SWING.contact; s.swinging=true;
     s.stroke=pickStroke(side);
     s.swingFrom=backliftPose(s.time);
-    s.contactAt=s.time+CONTACT_LEAD;
+    s.contactAt=s.time;
     s.pending=rules.judge(s.contactAt-s.flight,side,s.line,difficulty);
+    if(!s.pending.missed) resolve(s.pending);
     const button=$(side<0?'left':side>0?'right':'straight');
     if(button){
       button.classList.add('pressed');
@@ -240,7 +242,7 @@
     const wicketY=g.near+28*g.scale;
     line(g.cx-g.spread*.59,wicketY,g.cx+g.spread*.59,wicketY,'#fff0ba',2);
     [-1,1].forEach(sign=>line(g.cx+sign*g.spread*.57,g.near-3,g.cx+sign*g.spread*.65,wicketY+8,'#fff0ba',2));
-    if(s.practice){line(g.cx-g.spread*.7,g.near-8,g.cx+g.spread*.7,g.near-8,'#ffd25c',3);text('HIT HERE',g.cx+g.spread*.94,g.near-5,10,'#173b38','left');}
+    if(s.practice){const y=g.near-22*g.scale;line(g.cx-g.spread*.7,y,g.cx+g.spread*.7,y,'#ffd25c',2);}
   }
   function stumps(x,y,h,broken){for(let i=-1;i<=1;i++)line(x+i*h*.15,y,x+i*h*.15+(broken?i*h*.7:0),y-h,'#f8ecce',Math.max(2,h*.075));if(!broken)line(x-h*.21,y-h,x+h*.21,y-h,'#fff5d7',Math.max(2,h*.06));else{line(x-h*.8,y-h*1.2,x-h*.4,y-h*1.3,'#fff5d7',3);}}
   // ------------------------------------------------------------- batting
@@ -286,8 +288,7 @@
   STROKES.right = STROKES.coverDrive;
   STROKES.drive = STROKES.coverDrive;
 
-  // Press to contact. A perfectly timed press puts the bat on the ball at the
-  // moment it reaches the crease, which is why the delivery resolves here too.
+  // Sprite animation timestamps. Input starts at contact, with no scoring delay.
   const CONTACT_LEAD = .16;
   const SWING = { back: .06, contact: CONTACT_LEAD, extend: .24, finish: .46, rest: .92 };
 
@@ -408,22 +409,31 @@
     ctx.restore();
   }
   function ballPosition(g) {
-    const t=clamp(s.time/s.flight,0,1),pers=t*t*.45+t*.55;
-    const past=clamp((s.time-s.flight)/.22,0,1);
-    const groundY=mix(g.far,g.near,pers)+past*28*g.scale;
-    const x=mix(g.cx+35.6*g.scale,g.cx+s.line*g.spread*BALL_SPREAD,pers);
-    let z;
-    if(t<s.bounce)z=83.3*g.scale*(1-t/s.bounce);
-    else {
-      const u=(t-s.bounce)/(1-s.bounce);
-      // Match the incoming height to the authored stroke's contact plane:
-      // leg-side pull at waist height, off-side drive and straight at knee height.
-      const unit=clamp(150*g.scale,100,175)/410;
-      const contactY=Math.abs(s.line)<.12 ? 340 : s.line<0 ? 235 : 345;
-      const rise=(3+(470-contactY)*unit)/.624;
-      z=rise*(3.225*u-2.601*u*u)*(1-past*.5);
+    const b=window.CricketDelivery.sample(s.time,s.flight,s.bounce);
+    const t=b.progress;
+    const groundY=mix(g.far,g.near-22*g.scale,t);
+    const x=mix(g.cx+20*g.scale,g.cx+s.line*g.spread*BALL_SPREAD,t);
+    const pixelsPerMetre=mix(40,70,t)*g.scale;
+    return {x,y:groundY-b.height*pixelsPerMetre,groundY,
+      r:mix(3,7,clamp(t,0,1))*Math.max(.7,g.scale)};
+  }
+  const bowlingSheet=new Image();
+  bowlingSheet.src='assets/bowler-action.png';
+  function bowler(g) {
+    if(!bowlingSheet.complete || !bowlingSheet.naturalWidth)return;
+    let frame=7, advance=0;
+    if(s.phase==='runup') {
+      const t=s.time;
+      frame=t<.65?Math.floor(t/.13)%2:t<.83?2:3;
+      advance=-38*g.scale*(1-clamp(t/1.05,0,1));
+    } else if(s.phase==='delivery') {
+      frame=s.time<.09?4:s.time<.23?5:s.time<.43?6:7;
+      advance=Math.min(s.time,.55)*15*g.scale;
     }
-    return {x,y:groundY-z,groundY,r:mix(3,8,clamp(t,0,1))*Math.max(.7,g.scale)};
+    const unit=70*g.scale/400;
+    const cellW=bowlingSheet.naturalWidth/4,cellH=bowlingSheet.naturalHeight/2;
+    ctx.drawImage(bowlingSheet,(frame%4)*cellW,Math.floor(frame/4)*cellH,cellW,cellH,
+      g.cx+30*g.scale-250*unit,g.far+advance-470*unit,384*unit,512*unit);
   }
   function drawBall(x,y,r,shadowY){
     ellipse(x,shadowY,r*1.3,r*.35,'#244b3b40');ellipse(x,y,r+2,r+2,'#fff5d4');ellipse(x,y,r,r,'#bc382e');line(x-r*.35,y-r*.7,x+r*.3,y+r*.7,'#ffe0b4',Math.max(1,r*.2));
@@ -441,8 +451,7 @@
     stumps(g.cx,g.far+3,23*g.scale,false);
     person(g.cx-48*g.scale,g.far+10,62*g.scale,'partner');
     person(g.cx-Math.min(width*.39,360),g.near-3,65*g.scale,'umpire');
-    const run=s.phase==='runup'?clamp(s.time/1.05,0,1):1;
-    person(g.cx+30*g.scale,g.far-27*(1-run),70*g.scale,'bowler',s.phase==='runup'?s.time*19:0);
+    bowler(g);
     const bh=clamp(150*g.scale,100,175);
     const batterX=g.cx-14*g.scale;
     // Smaller screen Y is up the pitch: Liam stands at the popping crease,
@@ -503,6 +512,6 @@
   function frame(now) {const dt=last?Math.min((now-last)/1000,.05):0;last=now;update(dt);draw();requestAnimationFrame(frame);}
   // Development hook. Lets the browser checks drive a delivery and inspect a
   // swing frame by frame instead of waiting on real time.
-  window.BoundaryBashDebug={state:()=>s,geometry,pickStroke,swingPose,backliftPose,shot,SWING,STROKES,ballAtContact,battingFrame,battingReady:()=>battingReady,toggleDebug:()=>{s.debug=!s.debug;}};
+  window.BoundaryBashDebug={state:()=>s,geometry,ballPosition,pickStroke,swingPose,backliftPose,shot,SWING,STROKES,ballAtContact,battingFrame,battingReady:()=>battingReady,toggleDebug:()=>{s.debug=!s.debug;}};
   hud();overlay('menu');requestAnimationFrame(frame);
 })();

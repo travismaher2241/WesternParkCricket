@@ -1,6 +1,6 @@
 # Liam's Boundary Bash
 
-A front-on arcade batting game for Liam and the Western Park Warriors. Watch the bowler, follow the ball, and press left or right as it reaches the near crease.
+A front-on arcade batting game for Liam and the Western Park Warriors. Watch the bowler, follow the ball, and press left, straight or right as it reaches the bat.
 
 ## Play
 
@@ -19,7 +19,7 @@ Then visit http://localhost:5174.
 - **Escape:** pause or resume. Switching tabs pauses automatically.
 - **Sound button:** toggle sound effects.
 
-The challenge is 12 balls with three wickets. Good timing scores runs; sweet timing scores six. Missing a straight delivery can bowl you; a missed ball outside the stumps is a dot ball. Backyard, Club and All-star increase delivery speed and tighten timing windows. Practice continues without an innings limit and marks the contact crease in gold. Personal bests are saved locally, separately for each difficulty; practice does not affect records.
+The challenge is 12 balls with three wickets. Good timing scores runs; sweet timing scores six. Missing a straight delivery can bowl you; a missed ball outside the stumps is a dot ball. Backyard, Club and All-star increase delivery speed and tighten timing windows. Practice continues without an innings limit and marks the contact plane in gold. Personal bests are saved locally, separately for each difficulty; practice does not affect records.
 
 ## Design
 
@@ -54,3 +54,11 @@ The older `arcade-swing-check.cjs` and `arcade-swing-capture.cjs` are retained a
 ## Earlier simulation
 
 The previous batting-and-bowling prototype is preserved at `simulation.html`. Its documentation is in `SIMULATION-README.md`; its original simulation modules are unchanged. It is separate from the new arcade game.
+
+## Delivery and input
+
+The bowler uses `assets/bowler-action.png`, an eight-pose original atlas with run-up, gather, delivery stride, overhead release and follow-through. `src/delivery.js` uses constant gravity, a continuous bounce with vertical restitution 0.62 and a modest horizontal speed loss. Difficulty slows the whole delivery uniformly. Short leg-side balls and fuller off-side balls reach suitable pull/drive heights.
+
+Input contacts the ball immediately at its displayed position; it has no hidden swing delay. The ideal contact plane is in front of the batter's crease. A press more than 45 ms beyond that plane misses, so a ball behind the batter cannot earn four or six. This remains an arcade scoring model, not a full cricket simulator.
+
+`node tools/delivery-preview.cjs` captures release, bounce and both contacts for visual review.
