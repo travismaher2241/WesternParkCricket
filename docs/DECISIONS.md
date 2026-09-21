@@ -12,7 +12,7 @@ where to change it — most are a single line.
 | Visual technique | 2D sprites over layered backgrounds | Grey-box figures over drawn geometry, same camera system | `src/render/` |
 | Opening match length | Two overs per innings | Two overs, two wickets | `C.OVERS` / `C.WICKETS`, `src/core/config.js` |
 | Opponent | Fictional local side | "Drouin Creek Colts", invented, orange | `CG.TEAM.away`, `src/core/config.js` |
-| Game title | Leave open | Placeholder: "Liam at Findex Oval" | `index.html` title and menu heading |
+| Game title | Leave open | Placeholder: "Liam at Western Park Oval" | `index.html` title and menu heading |
 
 ## Things the game assumes that nobody has confirmed
 
@@ -55,4 +55,4 @@ From the plan, and worth keeping in the repo:
   photographs are visual reference only.
 - Never infer a current sponsor, uniform detail or ground feature from an old
   photo without confirmation.
-- Findex Oval is the home ground. The newer Club Hotel Oval is not modelled.
+- Western Park Oval is the home ground. The newer Club Hotel Oval is not modelled.

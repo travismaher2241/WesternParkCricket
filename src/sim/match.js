@@ -186,7 +186,7 @@
       };
     }
     if (b.runs === a.runs) {
-      return { winner: null, loser: null, margin: 'tie', text: 'Tied at Findex Oval' };
+      return { winner: null, loser: null, margin: 'tie', text: 'Tied at Western Park Oval' };
     }
     var by = a.runs - b.runs;
     return {

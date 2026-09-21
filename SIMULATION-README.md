@@ -1,8 +1,8 @@
-# Liam at Findex Oval
+# Liam at Western Park Oval
 
 A playable vertical slice of the cricket game described in
 `Liam_Western_Park_Cricket_Game_Build_Plan.docx`: two overs an innings at
-Findex Oval, Liam bats to set a score and then bowls to defend it, with AI
+Western Park Oval, Liam bats to set a score and then bowls to defend it, with AI
 fielding. Landscape web game, keyboard and touch.
 
 This is the build plan's **first playable version**, not the finished game.
@@ -69,7 +69,7 @@ src/sim/field.js        who reaches the ball first, catches, boundaries, runs, r
 src/sim/match.js        rules and scoring: overs, wickets, extras, target, result
 
 src/render/view.js      pinhole camera, top-down map, skeleton figure drawing
-src/render/scene.js     Findex Oval — landmark map and both down-the-pitch views
+src/render/scene.js     Western Park Oval — landmark map and both down-the-pitch views
 src/audio.js            synthesised bat crack, pad, stumps, applause, magpies
 src/main.js             phase machine, input, HUD
 
@@ -122,4 +122,4 @@ against the same coordinates.
 2. Confirm the open questions in [docs/DECISIONS.md](docs/DECISIONS.md) — most
    are one line in `src/core/config.js`.
 3. Approve the reference boards, then replace the grey-box figures and the
-   Findex Oval geometry in place.
+   Western Park Oval geometry in place.

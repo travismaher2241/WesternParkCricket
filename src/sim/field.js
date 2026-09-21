@@ -71,7 +71,7 @@
       var six = (bb.bounces === 0 && bb.z > 0.5);
       result.outcome = six ? 'six' : 'four';
       result.runs = six ? 6 : 4;
-      result.label = six ? 'SIX! Over the rope at Findex Oval' : 'FOUR - beats the field to the boundary';
+      result.label = six ? 'SIX! Over the rope at Western Park Oval' : 'FOUR - beats the field to the boundary';
       result.ballEndT = bb.t;
       result.chase = nearestChase(fielders, bb, post);
       return result;

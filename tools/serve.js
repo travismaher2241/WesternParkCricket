@@ -15,4 +15,4 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
     res.end(buf);
   });
-}).listen(port, () => console.log('Findex Oval dev server on http://localhost:' + port));
+}).listen(port, () => console.log('Western Park Oval dev server on http://localhost:' + port));

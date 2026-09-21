@@ -18,4 +18,4 @@ A missed ball outside the wicket is a dot; only the straight deliveries can bowl
 
 ## Intentional arcade simplifications
 
-This remains a two-button batting challenge, not a full cricket simulation. Timing sets scoring outcomes, running is automatic, Liam stays on strike, there are three wickets, and real-world metre measurements are compressed for visibility. Character likeness and the exact Findex Oval layout still need photo references. Gameplay checks are not evidence of coaching-grade biomechanics.
+This remains a two-button batting challenge, not a full cricket simulation. Timing sets scoring outcomes, running is automatic, Liam stays on strike, there are three wickets, and real-world metre measurements are compressed for visibility. Character likeness and the exact Western Park Oval layout still need photo references. Gameplay checks are not evidence of coaching-grade biomechanics.

@@ -99,7 +99,7 @@
     if (p === 'intro') {
       g.intro = 0;
       showCentre(
-        g.humanRole === 'bat' ? 'Findex Oval' : 'Liam to bowl',
+        g.humanRole === 'bat' ? 'Western Park Oval' : 'Liam to bowl',
         g.match.target != null
           ? (CG.TEAM.away.shortName + ' need ' + g.match.target + ' from ' + g.match.overs + ' overs')
           : 'Western Park Warriors — ' + g.match.overs + ' overs each',
@@ -190,7 +190,7 @@
       A.groan();
       g.shakeT = 0.35;
     } else if (b.rec && b.rec.runs === 6) {
-      bigMessage('SIX!', 'Over the rope at Findex Oval');
+      bigMessage('SIX!', 'Over the rope at Western Park Oval');
       A.applause(1);
     } else if (b.rec && b.rec.runs === 4) {
       bigMessage('FOUR', b.rec.text);
@@ -232,7 +232,7 @@
     var res = g.match.result();
     var first = g.match.completed[0], second = g.match.completed[1];
     $('resTitle').textContent = res.text;
-    $('resSub').textContent = 'Findex Oval, Warragul — ' + g.match.overs + ' overs each';
+    $('resSub').textContent = 'Western Park Oval, Warragul — ' + g.match.overs + ' overs each';
 
     var liam = first.batters[0];
     $('resCards').innerHTML =
@@ -246,7 +246,7 @@
     var moments = g.match.highlights(first.log).concat(g.match.highlights(second.log)).slice(0, 7);
     $('resMoments').innerHTML = moments.length
       ? moments.map(function (m) { return '<li>' + m.over + ' — ' + m.text + '</li>'; }).join('')
-      : '<li>A quiet evening at Findex Oval.</li>';
+      : '<li>A quiet evening at Western Park Oval.</li>';
 
     $('results').classList.remove('hidden');
     $('hud').classList.add('hidden');

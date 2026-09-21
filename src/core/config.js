@@ -20,7 +20,7 @@
     STUMP_HALF_WIDTH: 0.1143,
     STUMP_HEIGHT: 0.711,
 
-    // Findex Oval is a football oval, so it is long and comparatively narrow.
+    // Western Park Oval is a football oval, so it is long and comparatively narrow.
     // Junior boundary, metres from the centre of the pitch.
     BOUNDARY_RX: 41,
     BOUNDARY_RY: 47,

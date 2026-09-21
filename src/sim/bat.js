@@ -14,7 +14,7 @@
   var BACK_FOOT_Y  = C.STRIKER_Y - 0.38;
 
   // How hard a perfectly middled shot leaves the bat, before shot power and
-  // contact quality scale it. Tuned against the Findex Oval boundary so a
+  // contact quality scale it. Tuned against the Western Park Oval boundary so a
   // middled drive is a four and a middled loft can just clear the rope.
   var POWER_MPS = 22.0;
 

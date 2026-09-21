@@ -87,7 +87,7 @@
     $('resultEyebrow').textContent=record?'NEW PERSONAL BEST':'INNINGS COMPLETE';
     $('resultTitle').textContent=s.runs>=36?'TAKE A BOW, LIAM!':s.runs>=16?'NICE KNOCK, LIAM!':'ANOTHER GO, LIAM?';
     $('finalScore').textContent=s.runs+'/'+s.wickets;
-    $('resultMessage').textContent=`${s.balls} balls faced at Findex Oval. `+(s.runs<16?'Wait for the bounce, then time your swing.':'The Warriors will take that!');
+    $('resultMessage').textContent=`${s.balls} balls faced at Western Park Oval. `+(s.runs<16?'Wait for the bounce, then time your swing.':'The Warriors will take that!');
     $('fours').textContent=s.fours; $('sixes').textContent=s.sixes; $('best').textContent=bestScore();
     hud(); overlay('results');
   }
@@ -205,7 +205,7 @@
     // Scoreboard on its legs beyond the northern boundary.
     const boardX=width*.585,by=horizon-2,bw=92*k,bh=42*k;
     ctx.fillStyle='#193c45';ctx.fillRect(boardX-bw/2,by-bh-2,bw,bh);
-    text('FINDEX OVAL',boardX,by-bh*.68,8*k,'#c7d9b8');text(`${s.runs} / ${s.wickets}`,boardX,by-bh*.2,16*k,'#ffdf77');
+    text('WESTERN PARK OVAL',boardX,by-bh*.68,7*k,'#c7d9b8');text(`${s.runs} / ${s.wickets}`,boardX,by-bh*.2,16*k,'#ffdf77');
     line(boardX-bw*.37,by-2,boardX-bw*.37,by+12*k,'#506751',4*k);line(boardX+bw*.37,by-2,boardX+bw*.37,by+12*k,'#506751',4*k);
     [width*.26,width*.945].forEach(x=>{line(x,horizon+8,x,horizon-99*k,'#b7c4bc',3);ctx.fillStyle='#dee3d6';ctx.fillRect(x-17*k,horizon-104*k,34*k,11*k);});
     fence(g,horizon);

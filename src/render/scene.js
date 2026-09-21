@@ -1,4 +1,4 @@
-/* Findex Oval.
+/* Western Park Oval.
 
    A simplified but deliberately recognisable version of Liam's home ground:
    a football oval with cricket played across the middle of it. The football
@@ -478,7 +478,7 @@
     ctx.lineWidth = 1;
     ctx.strokeRect(a.sx, a.sy, b.sx - a.sx, b.sy - a.sy);
 
-    // Landmarks, so the top-down view is still obviously Findex Oval.
+    // Landmarks, so the top-down view is still obviously Western Park Oval.
     ctx.fillStyle = 'rgba(203,195,180,0.9)';
     var pv = td.project(OVAL.pavilion.x, OVAL.pavilion.y);
     ctx.fillRect(pv.sx - 5, pv.sy - OVAL.pavilion.w * td.mpp / 2, 10, OVAL.pavilion.w * td.mpp);

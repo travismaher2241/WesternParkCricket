@@ -52,7 +52,7 @@ marks square-on.
 **Unblocks:** bat, pad, glove and helmet colours, currently generic in
 `drawPlayer`.
 
-## Findex Oval — the pitch
+## Western Park Oval — the pitch
 
 | Shot | Notes |
 | --- | --- |
@@ -63,14 +63,14 @@ marks square-on.
 **Unblocks:** both down-the-pitch gameplay backgrounds, and the real pitch
 orientation relative to the ground's landmarks.
 
-## Findex Oval — panorama
+## Western Park Oval — panorama
 
 Eight overlapping landscape photos from the centre of the pitch, turning a
 full circle. Keep exposure and zoom unchanged between shots.
 
 **Unblocks:** the ball-follow view and the landmark map.
 
-## Findex Oval — landmarks
+## Western Park Oval — landmarks
 
 One straight-on view and one context view of each:
 
@@ -105,7 +105,7 @@ signed off.
 
 1. **Liam's likeness and base proportions** — before any animation frame.
 2. **The exact uniform reference sheet** — before generating any player.
-3. **The Findex Oval landmark board and pitch orientation** — before painting
+3. **The Western Park Oval landmark board and pitch orientation** — before painting
    any gameplay background.
 4. **One finished batting frame and one finished ground view**, approved as
    the master style references.
