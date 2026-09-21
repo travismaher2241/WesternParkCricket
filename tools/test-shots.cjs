@@ -1,8 +1,8 @@
-const { chromium } = require('playwright');
+const { launch } = require('./browser.cjs');
 const path = require('node:path');
 
 (async () => {
-  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  const browser = await launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 
   // Expose stepFrames

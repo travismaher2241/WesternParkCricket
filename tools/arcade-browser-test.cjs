@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');
-const {chromium}=require('playwright');
+const {launch}=require('./browser.cjs');
 (async()=>{
-const browser=await chromium.launch({channel:'chrome',headless:true});
+const browser=await launch();
 try{
 const page=await browser.newPage({viewport:{width:1280,height:800}}),errors=[];
 page.on('pageerror',e=>errors.push(e.message));
