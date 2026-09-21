@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 (async()=>{
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({channel:'chrome',headless:true});
 try{
 const page=await browser.newPage({viewport:{width:1280,height:800}}),errors=[];
 page.on('pageerror',e=>errors.push(e.message));
@@ -23,10 +23,16 @@ const bag=[-1,-1,-1,1,1,1];for(let i=5;i>0;i--){const j=Math.floor(.5*(i+1));[ba
 // Run-up starts after the ready banner disappears. Each six returns to run-up.
 for(let i=0;i<12;i++){
  await step(i===0?125:127);
- await step(167);
+ // Press at visible contact, without anticipating a hidden animation delay.
+ await page.evaluate(()=>{const d=window.BoundaryBashDebug,s=d.state();s.time=s.flight;});
  const side=bag[5-i%6];
  if(i%2===0)await page.keyboard.press(side<0?'ArrowLeft':'ArrowRight');
  else await page.locator(side<0?'#left':'#right').dispatchEvent('pointerdown',{pointerType:'touch'});
+ const contact=await page.evaluate(()=>{const s=window.BoundaryBashDebug.state();return {at:s.contactAt,flight:s.flight,runs:s.pending.runs};});
+ assert.ok(Math.abs(contact.at-contact.flight)<1e-9);
+ assert.equal(contact.runs,6);
+ // Advance the follow-through before checking the scoreboard.
+ await step(20);
  assert.equal(await page.locator('#feedback b').innerText(),'SIX!',`delivery ${i+1}`);
  assert.equal(await page.locator('#score').innerText(),`${(i+1)*6}/0`);
  if(i===0){
@@ -59,8 +65,20 @@ await page.setViewportSize({width:844,height:390});await step(1);
 await page.screenshot({path:'artifacts/arcade-landscape-menu.png'});
 await page.getByRole('button',{name:"LET'S BAT"}).click();await step(350);
 await page.screenshot({path:'artifacts/arcade-landscape-game.png'});
+// Input and visible contact use the same instant; late balls cannot score.
+const timing=await page.evaluate(()=>{
+ const d=window.BoundaryBashDebug,s=d.state();
+ s.phase='delivery';s.pending=null;s.line=1;s.time=s.flight;
+ const visible=d.ballPosition(d.geometry());d.shot(1);
+ const perfect=s.result.runs,origin=s.hitOrigin;
+ s.phase='delivery';s.pending=null;s.time=s.flight+.10;d.shot(1);
+ return {perfect,late:s.pending.missed,origin,visible,crease:d.geometry().near};
+});
+assert.equal(timing.perfect,6);
+assert.equal(timing.late,true);
+assert.deepEqual(timing.origin,timing.visible);
+assert.ok(timing.origin.groundY<timing.crease);
 assert.deepEqual(errors,[]);
 console.log('Browser checks passed: 12-ball innings, keyboard and touch shots, pause, 3-wicket ending, replay, practice, saved record, landscape layout. No JavaScript errors.');
 }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});
-
