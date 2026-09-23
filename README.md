@@ -27,7 +27,7 @@ Original illustrated right-handed batting sprites over a procedural canvas groun
 
 The batsman uses eight authored poses in `assets/liam-batting-right.png`: stance, backlift, and distinct contact/follow-through pairs. Images are never mirrored. The right-handed stance and helmet stay consistent for both shot directions. Input, timing and scoring remain separate from the artwork.
 
-The leg-side pair uses dedicated artwork in `assets/liam-leg-pull.png`. Contact and follow-through retain the ready stance's foot order and helmet direction while the bat travels to the leg side. The original atlas still supplies the other six poses. The earlier head transplant and isolated bat rotation are removed; see `docs/LEG-SIDE-ART.md`.
+The leg-side pair uses dedicated artwork in `assets/liam-leg-pull.png`. Contact and follow-through retain right-handed foot order while the shoulders open, both arms extend in front of the chest, and the head follows the leg-side shot. The original atlas still supplies the other six poses. The earlier head transplant and isolated bat rotation are removed; see `docs/LEG-SIDE-ART.md`.
 
 `src/arcade-rules.js` contains the pure timing and innings rules. `src/arcade.js` contains input, match state, animation, artwork and local score storage. `arcade.css` handles desktop and mobile layouts.
 

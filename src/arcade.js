@@ -438,7 +438,7 @@
     document.querySelector('.menu-note').textContent = 'Batting artwork could not load. Please refresh the game.';
   };
   battingSheet.src = 'assets/liam-batting-right.png';
-  legSheet.src = 'assets/liam-leg-pull.png';
+  legSheet.src = 'assets/liam-leg-pull.png?v=anatomy-2';
   // Dedicated authored pull poses preserve the stance, grip and eyeline.
   // Do not reuse/mirror an off-side drive or transplant heads and bat parts.
   const CELL_W = 384, CELL_H = 512;

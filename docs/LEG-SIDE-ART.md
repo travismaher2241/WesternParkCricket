@@ -1,4 +1,21 @@
-# Leg-side pull correction
+# Leg-side pull correction — revision history
+
+## Anatomy revision
+
+The initial replacement below held the torso too rigidly. The current asset opens the shoulders and extends both arms in front of the chest. The left top hand stays nearest the handle butt; the right bottom hand stays nearest the blade. The head follows the shot instead of being locked to the stance. Automated tests check loading and frame selection; anatomy requires visual inspection.
+
+Current asset: `assets/liam-leg-pull.png`, revised using the built-in image generation tool with these prompts:
+
+Correct ONLY bottom row first two cells in this 1536x1024 transparent cricket atlas (4 columns x2 rows, cells384x512). These two sprites have anatomical errors: contact arms are BEHIND BACK and followthrough LEFT WRIST IS REVERSED. Redraw both from anatomy first as a real RIGHT-HANDED cricket pull. Keep same person kit proportions scale, but DO NOT LOCK TORSO OR HEAD ORIENTATION to original. Allow ribcage shoulders and hips to rotate naturally toward leg side. Keep original right-handed foot order, screen-right lead foot ahead and screen-left back foot behind, no stance reversal. Contact cell: shoulders open toward screen-left so CHEST/SIDE becomes visible, both upper arms project FORWARD from chest, elbows in front of ribs, forearms extend naturally toward screen-left, two gloves together holding handle ahead of abdomen at waist height. Bat horizontal pointing left, blade sweetspot local x65 y240. No arm behind spine, no bat behind hips, no isolated dangling hand. Head follows ball over front shoulder, not facing away from delivery. Followthrough cell: same feet with modest back-heel pivot, shoulders continue turning, BOTH arms sweep across FRONT of chest; bat finishes around left shoulder. Maintain SAME HAND ORDER throughout: anatomical LEFT hand top hand at handle butt, anatomical RIGHT hand bottom hand nearer wooden blade. On leftward-pointing bat this means RIGHT glove is nearer screen-left blade, LEFT glove nearer screen-right handle cap. Left palm wraps handle with thumb naturally opposing fingers, knuckles on outside, wrist straight inline with its forearm; do NOT rotate glove backward or swap palms/knuckles. Two hands and exactly two arms visible with plausible shoulder-elbow-wrist chains. Match attractive outlined illustration navy round helmet grille blue shirt cream trousers white pads. Headtop local y60 feetbaseline470. Other six cells unchanged. Genuine transparent alpha background no grid/text.
+
+Refinement:
+Refine ONLY bottom row second cell in this atlas. Keep corrected bottom-left contact pose EXACTLY as supplied: its open chest and two forward arms are correct. In bottom-second followthrough head currently turns the WRONG way: rotate head so face/grille looks SCREEN LEFT over the left shoulder following the departing ball, consistent with bottom-left contact. Keep torso open with visible shirt chest, both elbows IN FRONT of chest. Correct two-handed right-handed grip with LEFT top hand nearest butt on screen-right and RIGHT bottom hand nearest blade on screen-left. Show natural wrapped fingers, thumb on inner side of handle, glove backs facing camera, two straight aligned wrists, no reversed palm or corkscrewed wrist. Right forearm crosses in front of chest to blade-near hand, left elbow bends naturally toward handle-butt hand. Bat continues leftward at shoulder height. Preserve feet order and all other cells, true transparent alpha, full1536x1024 4x2 layout.
+
+Final transparency cleanup prompt:
+
+Background extraction ONLY. Keep all eight cricket sprites EXACTLY unchanged including their anatomical poses, fingers, wrists, faces, colors and positions. Remove ALL smoky colored background, glow, blur, shadows, haze, checkerboard, semi-transparent rectangles, and pixelated halos surrounding every sprite. Everything outside the precise crisp character silhouette must be alpha ZERO transparent, including gaps between arms and torso, bat and body, legs. Output exact1536x1024 PNG RGBA transparent atlas4x2. No new backdrop. Clean hard-cut game sprites with antialiasing ONLY on silhouette edges. DO NOT redraw or alter any part of the cricketers.
+
+## Superseded first revision
 
 The recording showed a reversal between the ready stance and leg-side contact. The replacement uses dedicated contact and follow-through artwork with consistent foot order and helmet direction. The previous canvas head replacement and isolated bat rotation have been removed.
 
