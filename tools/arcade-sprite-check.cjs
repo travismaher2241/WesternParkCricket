@@ -9,8 +9,7 @@ assert.ok(await page.evaluate(()=>BoundaryBashDebug.battingReady()));
 for(const [name,phase,swinging,side,time,swing,frame] of [
  ['ready','ready',false,1,0,0,0],['backlift','delivery',false,1,.9,0,1],
  ['off-contact','result',true,1,0,.17,2],['off-follow','result',true,1,0,.5,3],
- // Leg side is built at load time (frame 4's body with a head still on the ball),
- // because the atlas's own leg frames face square leg and finish like a drive.
+ // Dedicated pull poses keep the ready stance's foot order and eyeline.
  ['leg-contact','result',true,-1,0,.17,8],['leg-follow','result',true,-1,0,.5,9],
  ['straight-contact','result',true,0,0,.17,6],['straight-follow','result',true,0,0,.5,7]]){
  await page.evaluate(v=>{const s=BoundaryBashDebug.state();Object.assign(s,v,{paused:true,flight:1.38,result:{runs:0,wicket:false,missed:true},pending:null,ballFlight:null});document.querySelector('#feedback').classList.remove('show');},{phase,swinging,side,time,swing});

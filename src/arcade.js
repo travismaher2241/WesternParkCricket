@@ -425,68 +425,32 @@
 
   // Authored right-handed sprites. NEVER mirror this atlas: both shot sides
   // have their own poses so handedness, helmet and grip remain consistent.
-  const battingSheet = new Image();
+  const battingSheet = new Image(), legSheet = new Image();
   let battingReady = false;
   ['play','practice'].forEach(id => $(id).disabled = true);
-  battingSheet.onload = () => {
+  battingSheet.onload = legSheet.onload = () => {
+    if(!battingSheet.complete || !battingSheet.naturalWidth || !legSheet.complete || !legSheet.naturalWidth)return;
     buildLegSide();
     battingReady = true;
     ['play','practice'].forEach(id => $(id).disabled = false);
   };
-  battingSheet.onerror = () => {
+  battingSheet.onerror = legSheet.onerror = () => {
     document.querySelector('.menu-note').textContent = 'Batting artwork could not load. Please refresh the game.';
   };
   battingSheet.src = 'assets/liam-batting-right.png';
-  // ------------------------------------------------------------ leg side
-  // The atlas's own leg-side frames are wrong. Frame 4 has his head turned
-  // round to square leg before the ball is hit, and frame 5 is a front-foot
-  // drive finish. Until authored frames replace them, a pull is built from
-  // the art that is right: frame 4's opened-up body and bat (the hips and
-  // shoulders really do open on a pull) with frame 6's head, which is still
-  // watching the ball. The follow-through carries that bat up and round.
-  // Coordinates are in atlas-cell pixels.
+  legSheet.src = 'assets/liam-leg-pull.png';
+  // Dedicated authored pull poses preserve the stance, grip and eyeline.
+  // Do not reuse/mirror an off-side drive or transplant heads and bat parts.
   const CELL_W = 384, CELL_H = 512;
   const LEG_CONTACT = 8, LEG_FOLLOW = 9;
-  const LEFT_GRILLE = [[150,96],[187,96],[187,114],[186,126],[192,134],[192,150],[150,150]];
-  const HEAD_DONOR  = [[150,96],[155,80],[168,67],[192,61],[214,65],[229,79],[233,96],
-                       [235,108],[233,120],[225,128],[214,134],[200,137],[186,133],
-                       [170,129],[161,122],[156,110]];
-  const HEAD_DX = 11, HEAD_DY = 6;          // frame 6 head onto frame 4's neck
-  const BLADE = [[18,222],[18,256],[64,256],[141,224],[141,196],[96,196]];
-  const GRIP = [148,208], WRAP = 62;        // pivot at the bottom hand, degrees
   let legContact = null, legFollow = null;
-
-  function cellCanvas(frame){
-    const c = document.createElement('canvas'); c.width = CELL_W; c.height = CELL_H;
-    if (frame != null) c.getContext('2d').drawImage(battingSheet,(frame%4)*CELL_W,Math.floor(frame/4)*CELL_H,
-      CELL_W,CELL_H,0,0,CELL_W,CELL_H);
-    return c;
-  }
-  function within(c2, pts, fn){
-    c2.save(); c2.beginPath();
-    pts.forEach((p,i)=>i?c2.lineTo(p[0],p[1]):c2.moveTo(p[0],p[1]));
-    c2.closePath(); c2.clip(); fn(); c2.restore();
-  }
   function buildLegSide(){
-    // Contact: frame 4 without its left-facing grille, wearing frame 6's head.
-    const contact = cellCanvas(4), cc = contact.getContext('2d');
-    within(cc, LEFT_GRILLE, () => cc.clearRect(0,0,CELL_W,CELL_H));
-    const donor = cellCanvas(6);
-    within(cc, HEAD_DONOR.map(([x,y])=>[x+HEAD_DX,y+HEAD_DY]), () => cc.drawImage(donor,HEAD_DX,HEAD_DY));
-    legContact = contact;
-
-    // Follow-through: lift the blade off, wrap it up and round about the
-    // bottom hand, then lay the body back over it so the gloves hold it.
-    const blade = cellCanvas(null), bc = blade.getContext('2d');
-    within(bc, BLADE, () => bc.drawImage(contact,0,0));
-    const body = cellCanvas(null), yc = body.getContext('2d');
-    yc.drawImage(contact,0,0);
-    within(yc, BLADE, () => yc.clearRect(0,0,CELL_W,CELL_H));
-    const follow = cellCanvas(null), fc = follow.getContext('2d');
-    fc.save(); fc.translate(GRIP[0],GRIP[1]); fc.rotate(WRAP*Math.PI/180); fc.translate(-GRIP[0],-GRIP[1]);
-    fc.drawImage(blade,0,0); fc.restore();
-    fc.drawImage(body,0,0);
-    legFollow = follow;
+    const frames = [0,1].map(column => {
+      const c=document.createElement('canvas');c.width=CELL_W;c.height=CELL_H;
+      c.getContext('2d').drawImage(legSheet,column*CELL_W,CELL_H,CELL_W,CELL_H,0,0,CELL_W,CELL_H);
+      return c;
+    });
+    [legContact,legFollow]=frames;
   }
 
   function battingFrame() {
@@ -508,7 +472,7 @@
     ellipse(x,y+2,22*unit*3,5*unit*3,'#28533340');
     const built = frame === LEG_CONTACT ? legContact : frame === LEG_FOLLOW ? legFollow : null;
     if (built) {
-      // Built from frame 4, so it keeps frame 4's foot alignment.
+      // Both pull poses use the same unmirrored anchor as the ready stance.
       ctx.drawImage(built,0,0,cellW,cellH,x-180*unit,y-470*unit,cellW*unit,cellH*unit);
       return;
     }
