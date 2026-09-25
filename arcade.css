@@ -3,3 +3,23 @@
 @media(max-width:650px){.scoreboard{height:78px;padding:10px 14px;gap:10px}.club{font-size:10px;letter-spacing:.5px}.club small{font-size:7px;letter-spacing:.5px;max-width:100px;line-height:1.5}.badge{width:31px;height:37px;font-size:14px}.score strong{font-size:31px}.score small{font-size:8px;letter-spacing:1px}.target{display:none}.icon{width:30px;height:30px;font-size:15px}.venue{top:96px;left:16px}.venue span{font-size:7px}.bottom{left:12px;right:12px;gap:8px;flex-wrap:wrap}.shot{padding:12px 16px;gap:10px;font-size:11px}.shot>span{font-size:25px}.shot small{font-size:9px}.delivery-info{order:-1;width:100%;margin-bottom:5px;font-size:9px}.card{padding:24px}.feedback{top:29%}.feedback span{font-size:11px}.feedback b{font-size:56px}}
 @media(max-height:500px) and (min-width:650px){.overlay{padding:12px}.card:not(.compact){width:590px;padding:14px 24px;gap:0 22px}.card:not(.compact) h1{font-size:40px;margin:12px 0}.card:not(.compact) h1 em{font-size:35px}.card:not(.compact)>p{font-size:12px;margin:8px 0 2px}.card:not(.compact) .lesson{margin:2px 0 6px}.card:not(.compact) .lesson p{font-size:10px;margin:7px 0}.card:not(.compact) fieldset{margin-bottom:9px}.card:not(.compact) .primary{padding:12px}.card:not(.compact) .secondary{padding:7px;margin-top:4px}.card:not(.compact) .menu-note{margin-top:3px}.scoreboard{height:64px}.score strong{font-size:29px}.score small{font-size:8px;margin-top:3px}.venue{top:79px;font-size:9px}.venue span{display:none}.bottom{bottom:12px}.delivery-info{font-size:8px}.balls{margin-top:9px}.ball-chip{width:24px;height:24px}.feedback{top:25%}.feedback b{font-size:44px}.feedback span{margin-top:5px;font-size:10px}.compact .stats{margin:10px 0}.compact .final-score{font-size:52px}.compact h2{font-size:27px}.compact .primary{padding:12px}}
 @media(max-width:650px){.bottom{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.delivery-info{grid-column:1/-1;grid-row:1;order:0;margin-bottom:7px}.shot{justify-content:center;padding:12px 5px;gap:4px;font-size:9px;letter-spacing:.4px}.shot>span{font-size:22px}.shot small{font-size:8px;letter-spacing:.3px}}
+
+/* Timeless Test */
+.test-entry{grid-column:1/-1;border-top:1px solid #ffffff30;margin-top:14px;padding-top:16px}
+.test-entry>b{font-size:11px;letter-spacing:1.5px;color:#ffcf56}.test-entry p{font-size:11px;margin:8px 0}
+.test-entry label{font-size:11px}.test-entry select{font:inherit;font-size:12px;padding:6px;border:1px solid #8ca9bc;border-radius:5px;background:#17374d;color:white;margin-bottom:10px}
+.test-entry small{display:block;font-size:9px;color:#a5bfd1;margin-top:10px}.test-entry .secondary{display:block;margin:auto}
+.overlay{align-items:safe center}.test-card{width:min(720px,100%);max-height:calc(100svh - 40px);overflow:auto;text-align:left}
+.test-card h2{font-size:26px;margin:14px 0}.test-card .primary{margin-top:16px}.test-card details{border:1px solid #ffffff30;border-radius:8px;margin:10px 0;overflow:hidden}
+.test-card summary{cursor:pointer;padding:12px;font-weight:bold;font-size:13px;background:#ffffff08}.test-card table{border-collapse:collapse;width:100%;font-size:12px}
+.test-card th,.test-card td{padding:8px;text-align:right;border-bottom:1px solid #ffffff10}.test-card th:first-child,.test-card td:first-child{text-align:left}
+.test-card .active-batter{color:#ffcf56}.test-card .dismissal{font-size:10px;color:#a5bfd1}.save-note{font-size:11px;color:#b6d7bd}
+.test-hud{position:absolute;top:151px;left:24px;right:24px;display:flex;align-items:start;justify-content:space-between;gap:12px;color:#102943;pointer-events:none}
+.test-hud>div{padding:9px 12px;background:#fff9dfed;border-radius:8px;box-shadow:0 2px 8px #17374d20;max-width:75%}
+.test-hud b,.test-hud span,.test-hud small{display:block}.test-hud b{font-size:13px}.test-hud span{font-size:11px;margin-top:4px}.test-hud small{font-size:10px;margin-top:6px;font-weight:bold}
+.test-hud button{pointer-events:auto;border:1px solid #ffffff80;border-radius:8px;background:#102943;color:#ffcf56;padding:10px;font-size:12px}
+@media(max-width:650px){.test-hud{top:135px;left:12px;right:12px}.test-hud>div{padding:7px 9px}.test-hud b{font-size:11px}.test-hud span,.test-hud small{font-size:9px}.test-card{padding:18px}.test-card th,.test-card td{padding:7px 5px;font-size:11px}.test-card .secondary{font-size:11px}.test-card h2{font-size:23px}}
+@media(max-height:500px) and (min-width:650px){.test-hud{top:96px}.test-hud>div{padding:5px 8px}.test-hud small{margin-top:3px}.test-hud b{font-size:11px}.test-card{max-height:calc(100svh - 24px)}}
+
+.test-mode .badge{font-size:15px}.test-card summary:focus-visible{outline:2px solid #ffcf56;outline-offset:-3px}
+@media(max-width:650px){.test-mode .badge{font-size:11px}}

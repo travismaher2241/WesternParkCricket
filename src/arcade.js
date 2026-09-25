@@ -20,8 +20,8 @@
   }
   addEventListener('resize', resize); resize();
   function overlay(id) {
-    ['menu','pause','results'].forEach(name => $(name).classList.toggle('hidden', name !== id));
-    $('left').disabled = $('right').disabled = !!id;
+    ['menu','pause','results','testPanel'].forEach(name => $(name).classList.toggle('hidden', name !== id));
+    $('left').disabled = $('right').disabled = $('straight').disabled = !!id;
     $('pauseButton').disabled = id === 'menu' || id === 'results';
     if (id) $(id).querySelector('button').focus({preventScroll:true});
   }
@@ -41,6 +41,7 @@
       chip.textContent = n === undefined ? '·' : n;
       return chip;
     }));
+    testHud();
   }
   function start(practice) {
     audio.resume();
@@ -49,6 +50,7 @@
     $('instruction').textContent = practice ? 'PRACTICE · HIT AS THE BALL REACHES THE BAT' : '12 BALLS · 3 WICKETS · LEFT, STRAIGHT, OR RIGHT';
   }
   function nextBall() {
+    if(s.test)syncTest();
     // Ease out of the last shot instead of snapping back to the stance.
     s.resetFrom = s.swinging ? swingPose(s.swing) : null;
     s.phase='runup'; s.time=0; s.swing=0; s.swinging=false; s.result=null; s.pending=null; s.contactAt=null;
@@ -65,6 +67,106 @@
     feedback('', '');
     $('instruction').textContent = s.practice ? 'HIT AS THE BALL REACHES THE BAT.' : 'WATCH THE BALL. TRUST YOUR TIMING.';
   }
+  // Test match adapter: the match engine owns score, strike and innings;
+  // the existing arcade loop still owns each delivery and its animation.
+  const testRules=window.TestMatch, TEST_SAVE='liam-timeless-test-v1';
+  let saveOK=true, declareArmed=false;
+  const overs=balls=>`${Math.floor(balls/6)}.${balls%6}`;
+  function savedTest() {
+    try {
+      const raw=JSON.parse(localStorage.getItem(TEST_SAVE)||'null');
+      const match=raw && testRules.restore(JSON.stringify(raw.match));
+      return match?{match,difficulty:rules.levels[raw.difficulty]?raw.difficulty:'easy'}:null;
+    }catch(_){return null;}
+  }
+  function saveTest() {
+    if(!s.test)return;
+    try{localStorage.setItem(TEST_SAVE,JSON.stringify({match:s.test,difficulty}));saveOK=true;}
+    catch(_){saveOK=false;}
+    $('testResume').classList.toggle('hidden',!saveOK&&!savedTest());
+  }
+  function syncTest() {
+    const i=testRules.current(s.test);
+    s.runs=i.runs;s.wickets=i.wickets;s.balls=i.balls;
+    s.fours=i.batters.reduce((n,b)=>n+b.fours,0);s.sixes=i.batters.reduce((n,b)=>n+b.sixes,0);
+  }
+  function testHud() {
+    const active=!!s.test && s.phase!=='menu';
+    $('testHud').classList.toggle('hidden',!active);
+    $('targetLabel').textContent=active?'INNINGS':'PERSONAL BEST';
+    document.querySelector('.badge').textContent=active?'AUS':'WP';
+    document.querySelector('.game').classList.toggle('test-mode',active);
+    $('clubName').textContent=active?'AUSTRALIA XI':'WESTERN PARK';
+    if(!active)return;
+    const i=testRules.current(s.test),b=i.batters[i.striker],p=i.batters[i.partner];
+    $('overs').textContent=`${i.team==='Australia'?'AUS':'ENG'} · ${overs(i.balls)} OVERS`;
+    $('target').textContent=i.number;
+    $('strikerName').textContent=`${b.name}${b.out?'':' *'} ${b.runs} (${b.balls})`;
+    $('partnerName').textContent=`${p.name} ${p.runs} (${p.balls}) · non-striker`;
+    $('testSituation').textContent=testRules.situation(s.test);
+    $('balls').replaceChildren(...i.history.map(n=>{
+      const chip=document.createElement('span');chip.className='ball-chip'+(n==='W'?' wicket':n>=4?' boundary':'');chip.textContent=n;return chip;
+    }));
+  }
+  function startTest(resume=false) {
+    const saved=resume?savedTest():null;
+    if(resume&&!saved)return;
+    start(false);
+    s.test=saved?saved.match:testRules.create($('testOrder').value);
+    if(saved){difficulty=saved.difficulty;document.querySelectorAll('[data-difficulty]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.difficulty===difficulty)));}
+    syncTest();saveTest();hud();
+    if(s.test.status==='batting')readyTest();else showTestPanel();
+  }
+  function readyTest() {
+    s.phase='ready';s.time=0;s.paused=false;s.swinging=false;s.pending=null;s.result=null;s.ballFlight=null;
+    syncTest();overlay(null);hud();
+    const i=testRules.current(s.test),b=i.batters[i.striker];
+    feedback('AUSTRALIA TO BAT',`${b.name} on strike · ${i.number===1?'first':'second'} innings`);
+    $('instruction').textContent='TIMELESS TEST · NO OVER LIMIT';
+  }
+  function showTestPanel() {
+    if(!s.test)return;
+    s.paused=true;declareArmed=false;saveTest();feedback('','');
+    const m=s.test,i=testRules.current(m),active=m.status==='batting';
+    $('testTitle').textContent=m.result?m.result.text.toUpperCase():active?'TEST SCORECARD':m.status==='simulation'?'ENGLAND TO BAT':'INNINGS COMPLETE';
+    $('testSummary').textContent=m.result?`Liam: ${m.innings.filter(inn=>inn.team==='Australia').map(inn=>{const liam=inn.batters[0];return liam.runs+(liam.out?'':'*');}).join(' and ')}. Select an innings below for its full scorecard.`:testRules.situation(m)+(m.status==='simulation'?'. Simulate England’s innings to continue.':'');
+    $('saveNotice').textContent=saveOK?'Saved on this device after every ball.':'Saving is unavailable in this browser. Keep this tab open to retain your match.';
+    $('testContinue').textContent=active?'BACK TO BATTING →':m.status==='simulation'?'SIMULATE ENGLAND INNINGS →':m.status==='complete'?'NEW TEST MATCH →':'CONTINUE MATCH →';
+    $('testDeclare').classList.toggle('hidden',!active);
+    $('testDeclare').textContent='Declare innings';
+    $('testExit').textContent=saveOK?'Save & return to menu':'Return to menu';
+    $('testInnings').replaceChildren(...m.innings.map((inn,index)=>{
+      const details=document.createElement('details');details.open=!m.result&&index===m.innings.length-1;
+      const summary=document.createElement('summary');summary.textContent=`${inn.team} · innings ${inn.number}: ${inn.runs}/${inn.wickets}${inn.declared?' dec':''} (${overs(inn.balls)} ov)`;details.append(summary);
+      const table=document.createElement('table'),head=document.createElement('thead'),tr=document.createElement('tr');
+      ['Batter','R','B','4s','6s'].forEach(label=>{const th=document.createElement('th');th.textContent=label;th.scope='col';tr.append(th);});head.append(tr);table.append(head);
+      const body=document.createElement('tbody');inn.batters.forEach((b,n)=>{
+        const row=document.createElement('tr'),name=document.createElement('td');
+        if(!inn.closed&&n===inn.striker)row.className='active-batter';
+        name.textContent=b.name;const note=document.createElement('div');note.className='dismissal';
+        note.textContent=b.out?'out':!b.entered?'did not bat':inn.closed?'not out':n===inn.striker?'on strike':'not out';name.append(note);row.append(name);
+        [b.runs,b.balls,b.fours,b.sixes].forEach(value=>{const td=document.createElement('td');td.textContent=b.entered?value:'—';row.append(td);});body.append(row);
+      });table.append(body);details.append(table);return details;
+    }));
+    overlay('testPanel');
+    document.querySelector('.test-card').scrollTop=0;
+  }
+  function continueTest() {
+    const m=s.test;
+    if(m.status==='complete'){startTest();return;}
+    if(m.status==='batting'){s.paused=false;overlay(null);return;}
+    if(m.status==='interval')testRules.advance(m);
+    if(m.status==='simulation'){testRules.simulate(m);syncTest();hud();saveTest();showTestPanel();}
+    else {saveTest();readyTest();}
+  }
+  $('testPlay').onclick=()=>startTest();$('testResume').onclick=()=>startTest(true);
+  $('scorecardButton').onclick=showTestPanel;$('testContinue').onclick=continueTest;
+  $('testDeclare').onclick=()=>{
+    if(!declareArmed){declareArmed=true;$('testDeclare').textContent='Confirm declaration — end this innings';return;}
+    testRules.declare(s.test);saveTest();showTestPanel();
+  };
+  $('testExit').onclick=()=>{saveTest();home();};
+  $('testResume').classList.toggle('hidden',!savedTest());
   function shot(side) {
     if(s.paused || s.phase!=='delivery' || s.pending) return;
     s.side=side; s.swing=SWING.contact; s.swinging=true;
@@ -83,8 +185,9 @@
     s.hitOrigin=ballPosition(geometry());
     s.result=result; s.phase='result'; s.time=0;
     s.runs+=result.runs; s.wickets+=Number(result.wicket); s.balls++;
-    s.history.push(result.wicket?'W':result.runs);
-    if(result.runs===4)s.fours++; if(result.runs===6)s.sixes++;
+    if(s.test){testRules.ball(s.test,result.runs,result.wicket);syncTest();saveTest();}
+    else s.history.push(result.wicket?'W':result.runs);
+    if(!s.test){if(result.runs===4)s.fours++; if(result.runs===6)s.sixes++;}
 
     // Compute authentic stroke-driven ball launch physics
     const baseAngle = s.side < 0 ? -32 : s.side > 0 ? 32 : 0; // degrees (0=straight, negative=screen left, positive=screen right)
@@ -137,7 +240,7 @@
     feedback(result.title,result.detail); hud();
     if(result.wicket) {audio.stumps();audio.groan();}
     else if(!result.missed) {audio.bat(result.runs>=4?1:.55);if(result.runs>=4)audio.applause(result.runs/6);}
-    $('instruction').textContent=s.practice?'PRACTICE · ESC TO FINISH':`${Math.max(0,12-s.balls)} BALLS LEFT · ${Math.max(0,3-s.wickets)} WICKETS IN HAND`;
+    $('instruction').textContent=s.test?`${10-s.wickets} WICKETS IN HAND · NO OVER LIMIT`:s.practice?'PRACTICE · ESC TO FINISH':`${Math.max(0,12-s.balls)} BALLS LEFT · ${Math.max(0,3-s.wickets)} WICKETS IN HAND`;
   }
   function finish() {
     s.phase='finished'; feedback('','');
@@ -152,9 +255,10 @@
   }
   function pause() {
     if(['menu','finished'].includes(s.phase))return;
+    if(s.test){if(s.test.status!=='batting')return;if(s.paused){s.paused=false;overlay(null);}else showTestPanel();return;}
     s.paused=!s.paused;overlay(s.paused?'pause':null);
   }
-  function home() {s.phase='menu';s.paused=false;feedback('','');overlay('menu');}
+  function home() {s.phase='menu';s.paused=false;feedback('','');overlay('menu');hud();}
   $('play').onclick=()=>start(false);$('practice').onclick=()=>start(true);
   $('again').onclick=()=>start(false);$('home').onclick=$('quit').onclick=home;
   $('pauseButton').onclick=$('resume').onclick=pause;
@@ -195,7 +299,8 @@
       }
       else if(s.time>s.flight+.16)resolve(rules.miss(s.line,'No shot'));
     } else if(s.phase==='result'&&s.time>(s.result.runs>=4?2.15:1.65)) {
-      if(rules.complete(s))finish();else nextBall();
+      if(s.test){if(s.test.status!=='batting')showTestPanel();else nextBall();}
+      else if(rules.complete(s))finish();else nextBall();
     }
   }
   // All drawing uses a fixed front-on view. No camera cuts during a delivery.
@@ -427,12 +532,12 @@
   // have their own poses so handedness, helmet and grip remain consistent.
   const battingSheet = new Image(), legSheet = new Image();
   let battingReady = false;
-  ['play','practice'].forEach(id => $(id).disabled = true);
+  ['play','practice','testPlay','testResume'].forEach(id => $(id).disabled = true);
   battingSheet.onload = legSheet.onload = () => {
     if(!battingSheet.complete || !battingSheet.naturalWidth || !legSheet.complete || !legSheet.naturalWidth)return;
     buildLegSide();
     battingReady = true;
-    ['play','practice'].forEach(id => $(id).disabled = false);
+    ['play','practice','testPlay','testResume'].forEach(id => $(id).disabled = false);
   };
   battingSheet.onerror = legSheet.onerror = () => {
     document.querySelector('.menu-note').textContent = 'Batting artwork could not load. Please refresh the game.';
@@ -624,6 +729,6 @@
   function frame(now) {const dt=last?Math.min((now-last)/1000,.05):0;last=now;update(dt);draw();requestAnimationFrame(frame);}
   // Development hook. Lets the browser checks drive a delivery and inspect a
   // swing frame by frame instead of waiting on real time.
-  window.BoundaryBashDebug={state:()=>s,geometry,ballPosition,pickStroke,swingPose,backliftPose,shot,SWING,STROKES,ballAtContact,battingFrame,battingReady:()=>battingReady,legFrames:()=>({legContact,legFollow,LEG_CONTACT,LEG_FOLLOW}),toggleDebug:()=>{s.debug=!s.debug;}};
+  window.BoundaryBashDebug={state:()=>s,resolve,startTest,showTestPanel,geometry,ballPosition,pickStroke,swingPose,backliftPose,shot,SWING,STROKES,ballAtContact,battingFrame,battingReady:()=>battingReady,legFrames:()=>({legContact,legFollow,LEG_CONTACT,LEG_FOLLOW}),toggleDebug:()=>{s.debug=!s.debug;}};
   hud();overlay('menu');requestAnimationFrame(frame);
 })();

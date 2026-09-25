@@ -64,3 +64,22 @@ The bowler uses `assets/bowler-action.png`, an eight-pose original atlas with ru
 Input contacts the ball immediately at its displayed position; it has no hidden swing delay. The ideal contact plane is in front of the batter's crease. A press more than 45 ms beyond that plane misses, so a ball behind the batter cannot earn four or six. This remains an arcade scoring model, not a full cricket simulator.
 
 `node tools/delivery-preview.cjs` captures release, bounce and both contacts for visual review.
+
+## Timeless Test match
+
+Choose **Timeless Test** on the menu to play Australia against England at Western Park Oval. Liam opens alongside Usman Khawaja in a custom Australian XI, followed by Labuschagne, Smith, Head, Marsh, Carey, Cummins, Starc, Lyon and Hazlewood. These are game lineups, not live national selections.
+
+You control every Australian batter. There are two innings per side, ten wickets per innings, and no over or day limit. Singles/three runs and over endings rotate the strike; wickets bring in the next player. England's innings are simulated delivery by delivery, including individual scores, wickets and fourth-innings target stopping. Choose to bat or bowl first. Scorecards show runs, balls faced and boundaries for every batter. Declare from the scorecard with a second confirmation click. Results cover wins by runs, wickets or an innings, and ties. No five-day clock, weather, follow-on, extras, reviews or bowling controls are modelled; the existing arcade shot mechanics and shared character artwork remain in use.
+
+A single Test is saved locally after each ball and innings transition. **Resume saved Test** returns to the next delivery, with the original difficulty. Starting a new Test replaces this save; arcade and practice do not. If browser storage is blocked, the scorecard reports that saving is unavailable. Best arcade scores remain separate.
+
+Match logic: `src/test-match.js`. Browser integration: `src/arcade.js`. Rule references: [MCC innings](https://www.lords.org/mcc/the-laws/innings) and [MCC result](https://www.lords.org/mcc/the-laws/the-result).
+
+Verification:
+
+```sh
+node tools/test-match-test.cjs
+node tools/test-match-browser.cjs
+```
+
+The pure checks cover 12,000-ball innings, strike rotation, ten wickets, declaration, both batting orders, target stopping, innings victories, ties and reproducible opposition simulations. Browser checks cover keyboard batting, save/reload/resume, scorecards, declarations, opposition simulation, full-match completion, and phone layout. Browser checks require the local server on port 5174 and Playwright.
